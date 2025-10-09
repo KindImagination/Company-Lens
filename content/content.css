@@ -1,0 +1,13 @@
+/**
+ * Content CSS for Kununu Badge Extension
+ * 
+ * NOTE: This file is intentionally minimal/empty.
+ * 
+ * All badge styles are defined inline within the Shadow DOM
+ * in content.js for complete style isolation. This ensures
+ * that page styles cannot affect the badge and vice versa.
+ * 
+ * Shadow DOM provides stronger encapsulation than separate
+ * CSS files injected into the page context.
+ */
+
