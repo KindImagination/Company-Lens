@@ -18,6 +18,8 @@
   let badgeInserted = false;
   let mutationObserver = null;
   let debounceTimer = null;
+  let diagnosticsEnabled = false;
+  let diagnosticsSlug = 'de/sap';
 
   /**
    * Check if badge is enabled for current tab
@@ -33,6 +35,46 @@
    */
   function setBadgeEnabled(enabled) {
     sessionStorage.setItem(STORAGE_KEY, String(enabled));
+  }
+
+  /**
+   * Gets diagnostics configuration from chrome.storage.local
+   * Returns a Promise that resolves with the config
+   */
+  function getDiagConfig() {
+    return new Promise(resolve => {
+      // Default config
+      const defaults = {
+        kununuDiagEnabled: false,
+        kununuDiagTestSlug: 'de/sap'
+      };
+
+      // Check if chrome API is available
+      if (typeof chrome === 'undefined') {
+        console.warn('[Kununu Badge] chrome API not available, using defaults');
+        resolve(defaults);
+        return;
+      }
+      
+      if (!chrome.storage) {
+        console.warn('[Kununu Badge] chrome.storage not available, using defaults');
+        resolve(defaults);
+        return;
+      }
+      
+      if (!chrome.storage.local) {
+        console.warn('[Kununu Badge] chrome.storage.local not available, using defaults');
+        resolve(defaults);
+        return;
+      }
+
+      try {
+        chrome.storage.local.get(defaults, resolve);
+      } catch (error) {
+        console.warn('[Kununu Badge] Error accessing chrome.storage.local:', error);
+        resolve(defaults);
+      }
+    });
   }
 
   /**
@@ -195,6 +237,30 @@
   }
 
   /**
+   * Mounts the diagnostics overlay
+   */
+  function mountDiagnosticsOverlay(slug) {
+    console.info('[Kununu-Widget-Spike] Diagnostics enabled, slug=', slug);
+    
+    // Remove badge if it exists
+    removeBadge();
+    
+    // Show diagnostics if available and not already visible
+    if (window.KununuDiagnostics && !window.KununuDiagnostics.isVisible()) {
+      window.KununuDiagnostics.show(slug);
+    }
+  }
+
+  /**
+   * Unmounts the diagnostics overlay
+   */
+  function unmountDiagnosticsOverlay() {
+    if (window.KununuDiagnostics && window.KununuDiagnostics.isVisible()) {
+      window.KununuDiagnostics.hide();
+    }
+  }
+
+  /**
    * Inserts the badge into the DOM
    * Ensures idempotency - only inserts once
    */
@@ -313,38 +379,78 @@
   }
 
   /**
-   * Message listener for popup communication
+   * Storage change listener for live diagnostics toggle
    */
-  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.type === 'toggleBadge') {
-      const enabled = message.enabled;
-      setBadgeEnabled(enabled);
+  if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
+    chrome.storage.onChanged.addListener((changes, areaName) => {
+      if (areaName !== 'local') return;
       
-      if (enabled) {
-        insertBadge();
-      } else {
-        removeBadge();
+      let shouldRefresh = false;
+      let newDiagEnabled = diagnosticsEnabled;
+      let newDiagSlug = diagnosticsSlug;
+      
+      if (changes.kununuDiagEnabled) {
+        newDiagEnabled = changes.kununuDiagEnabled.newValue;
+        shouldRefresh = true;
+        console.log('[Kununu Badge] Diagnostics enabled changed to:', newDiagEnabled);
       }
       
-      sendResponse({ success: true, enabled });
-    } else if (message.type === 'getBadgeState') {
-      sendResponse({ enabled: isBadgeEnabled() });
-    }
-    
-    return true; // Keep message channel open
-  });
+      if (changes.kununuDiagTestSlug) {
+        newDiagSlug = changes.kununuDiagTestSlug.newValue;
+        shouldRefresh = true;
+        console.log('[Kununu Badge] Diagnostics slug changed to:', newDiagSlug);
+      }
+      
+      if (shouldRefresh) {
+        // Update state
+        diagnosticsEnabled = newDiagEnabled;
+        diagnosticsSlug = newDiagSlug;
+        
+        // Switch modes based on new settings
+        if (diagnosticsEnabled) {
+          // Switch to diagnostics mode
+          removeBadge();
+          unmountDiagnosticsOverlay(); // Hide existing overlay first
+          mountDiagnosticsOverlay(diagnosticsSlug); // Show with new settings
+        } else {
+          // Switch back to badge mode
+          unmountDiagnosticsOverlay();
+          insertBadge();
+        }
+      }
+    });
+  } else {
+    console.warn('[Kununu Badge] chrome.storage.onChanged not available, live switching disabled');
+  }
 
   /**
    * Initialize the extension
    */
-  function init() {
+  async function init() {
     console.log('[Kununu Badge] Initializing on', window.location.href);
     
-    // Initial badge insertion
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', insertBadge);
+    // Wait for diagnostics config before deciding what to render
+    const diagConfig = await getDiagConfig();
+    diagnosticsEnabled = diagConfig.kununuDiagEnabled;
+    diagnosticsSlug = diagConfig.kununuDiagTestSlug;
+    
+    console.log('[Kununu Badge] Diagnostics config loaded:', { diagnosticsEnabled, diagnosticsSlug });
+    
+    // Route based on diagnostics flag
+    if (diagnosticsEnabled) {
+      // Do not render badge; mount diagnostics overlay
+      mountDiagnosticsOverlay(diagnosticsSlug);
     } else {
-      insertBadge();
+      // Proceed with normal badge flow
+      const doInsert = () => {
+        insertBadge();
+      };
+      
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', doInsert);
+      } else {
+        doInsert();
+      }
     }
 
     // Setup observer for SPA navigation

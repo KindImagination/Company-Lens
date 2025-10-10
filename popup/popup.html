@@ -121,6 +121,45 @@
       box-shadow: 0 0 0 2px rgba(0, 184, 212, 0.3);
     }
 
+    .section-divider {
+      height: 1px;
+      background: #e0e0e0;
+      margin: 16px 0;
+    }
+
+    .input-section {
+      margin-bottom: 12px;
+    }
+
+    .input-section__label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: #666;
+      margin-bottom: 6px;
+    }
+
+    .input-section__input {
+      width: 100%;
+      padding: 8px 12px;
+      font-size: 13px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      background: #fff;
+      transition: border-color 0.2s ease;
+    }
+
+    .input-section__input:focus {
+      outline: none;
+      border-color: #00b8d4;
+      box-shadow: 0 0 0 2px rgba(0, 184, 212, 0.1);
+    }
+
+    .input-section__input::placeholder {
+      color: #aaa;
+    }
+
     .info {
       font-size: 12px;
       color: #666;
@@ -129,6 +168,12 @@
       background: #f9f9f9;
       border-left: 3px solid #00b8d4;
       border-radius: 4px;
+    }
+
+    .info--warning {
+      background: #fff8e1;
+      border-left-color: #ffa000;
+      color: #f57c00;
     }
 
     .status {
@@ -185,6 +230,29 @@
 
   <div class="info">
     Toggle the badge on/off for the current StepStone tab. The setting is remembered per tab session.
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="toggle-section">
+    <label for="diagToggle" class="toggle-section__label">
+      Diagnostics: Kununu Widget Spike
+    </label>
+    <label class="toggle-switch">
+      <input type="checkbox" id="diagToggle">
+      <span class="toggle-switch__slider"></span>
+    </label>
+  </div>
+
+  <div class="input-section" id="slugInputSection">
+    <label for="diagSlugInput" class="input-section__label">
+      Test company slug/path
+    </label>
+    <input type="text" id="diagSlugInput" class="input-section__input" placeholder="de/sap" value="de/sap">
+  </div>
+
+  <div class="info info--warning" id="diagnosticsInfo" style="display: none;">
+    Diagnostics mode replaces the badge with an overlay that tests iframe embedding of Kununu URLs. For testing only.
   </div>
 
   <div class="status" id="status">
