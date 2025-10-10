@@ -11,6 +11,7 @@
 
   // Configuration
   const BADGE_HOST_ID = 'kununu-badge-host';
+  const PREVIEW_OVERLAY_ID = 'kununu-preview-overlay';
   const STORAGE_KEY = 'kununuBadgeEnabled';
   const DEBOUNCE_MS = 300;
   
@@ -20,6 +21,7 @@
   let debounceTimer = null;
   let diagnosticsEnabled = false;
   let diagnosticsSlug = 'de/sap';
+  let badgeShadowRoot = null;
 
   /**
    * Check if badge is enabled for current tab
@@ -101,7 +103,7 @@
           font-weight: 600;
           border-radius: 16px;
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-          cursor: default;
+          cursor: pointer;
           user-select: none;
           white-space: nowrap;
           transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -261,6 +263,245 @@
   }
 
   /**
+   * Opens the Kununu preview overlay with an iframe
+   * @param {string} slug - Kununu company slug (e.g., 'de/sap')
+   */
+  function openKununuPreviewOverlay(slug) {
+    console.info('[Kununu] Preview overlay opened with slug:', slug);
+    
+    // Prevent duplicate overlays
+    if (document.getElementById(PREVIEW_OVERLAY_ID)) {
+      return;
+    }
+
+    // Create overlay host element
+    const overlayHost = document.createElement('div');
+    overlayHost.id = PREVIEW_OVERLAY_ID;
+    overlayHost.setAttribute('data-kununu-preview', 'true');
+
+    // Attach Shadow DOM for style isolation
+    const shadowRoot = overlayHost.attachShadow({ mode: 'closed' });
+
+    // Create overlay content
+    const kununuUrl = `https://www.kununu.com/${slug}`;
+    shadowRoot.innerHTML = `
+      <style>
+        :host {
+          all: initial;
+          display: block;
+        }
+
+        .preview-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          z-index: 2147483647;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          animation: fadeIn 0.2s ease;
+        }
+
+        .preview-overlay__backdrop {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.7);
+          cursor: pointer;
+        }
+
+        .preview-overlay__panel {
+          position: relative;
+          width: 90%;
+          max-width: 1200px;
+          height: 85vh;
+          background: white;
+          border-radius: 12px;
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+          animation: slideUp 0.3s ease;
+        }
+
+        .preview-overlay__header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 16px 20px;
+          background: linear-gradient(135deg, #00b8d4 0%, #0097a7 100%);
+          color: white;
+          flex-shrink: 0;
+        }
+
+        .preview-overlay__title {
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+          font-size: 18px;
+          font-weight: 600;
+          margin: 0;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .preview-overlay__actions {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .preview-overlay__link {
+          color: white;
+          text-decoration: none;
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+          font-size: 14px;
+          font-weight: 500;
+          padding: 6px 12px;
+          background: rgba(255, 255, 255, 0.2);
+          border-radius: 6px;
+          transition: background 0.2s ease;
+        }
+
+        .preview-overlay__link:hover {
+          background: rgba(255, 255, 255, 0.3);
+        }
+
+        .preview-overlay__close {
+          background: rgba(255, 255, 255, 0.2);
+          border: none;
+          color: white;
+          font-size: 24px;
+          font-weight: 300;
+          width: 32px;
+          height: 32px;
+          border-radius: 6px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: background 0.2s ease;
+          line-height: 1;
+          padding: 0;
+        }
+
+        .preview-overlay__close:hover {
+          background: rgba(255, 255, 255, 0.3);
+        }
+
+        .preview-overlay__content {
+          flex: 1;
+          overflow: hidden;
+          display: flex;
+        }
+
+        .preview-overlay__iframe {
+          width: 100%;
+          height: 100%;
+          border: none;
+          background: white;
+        }
+
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      </style>
+
+      <div class="preview-overlay" role="dialog" aria-modal="true" aria-labelledby="preview-title">
+        <div class="preview-overlay__backdrop"></div>
+        <div class="preview-overlay__panel">
+          <header class="preview-overlay__header">
+            <h2 class="preview-overlay__title" id="preview-title">
+              <span>K</span>
+              Kununu Preview
+            </h2>
+            <div class="preview-overlay__actions">
+              <a href="${kununuUrl}" target="_blank" rel="noopener noreferrer" class="preview-overlay__link">
+                Open on Kununu
+              </a>
+              <button class="preview-overlay__close" aria-label="Close preview" title="Close (Esc)">
+                ×
+              </button>
+            </div>
+          </header>
+          <div class="preview-overlay__content">
+            <iframe 
+              src="${kununuUrl}" 
+              class="preview-overlay__iframe"
+              referrerpolicy="no-referrer"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+              loading="eager"
+              title="Kununu Company Profile"
+            ></iframe>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Add event listeners
+    const closeButton = shadowRoot.querySelector('.preview-overlay__close');
+    const backdrop = shadowRoot.querySelector('.preview-overlay__backdrop');
+
+    const closeHandler = () => closeKununuPreviewOverlay();
+    
+    if (closeButton) {
+      closeButton.addEventListener('click', closeHandler);
+    }
+    
+    if (backdrop) {
+      backdrop.addEventListener('click', closeHandler);
+    }
+
+    // ESC key handler
+    const escHandler = (event) => {
+      if (event.key === 'Escape') {
+        closeKununuPreviewOverlay();
+      }
+    };
+    document.addEventListener('keydown', escHandler);
+    
+    // Store handler for cleanup
+    overlayHost._escHandler = escHandler;
+
+    // Append to body
+    document.body.appendChild(overlayHost);
+  }
+
+  /**
+   * Closes the Kununu preview overlay
+   */
+  function closeKununuPreviewOverlay() {
+    const overlayHost = document.getElementById(PREVIEW_OVERLAY_ID);
+    if (overlayHost) {
+      // Remove ESC handler
+      if (overlayHost._escHandler) {
+        document.removeEventListener('keydown', overlayHost._escHandler);
+      }
+      overlayHost.remove();
+      console.log('[Kununu] Preview overlay closed');
+    }
+  }
+
+  /**
    * Inserts the badge into the DOM
    * Ensures idempotency - only inserts once
    */
@@ -292,6 +533,9 @@
     // Attach closed Shadow DOM for complete isolation
     const shadowRoot = hostElement.attachShadow({ mode: 'closed' });
     shadowRoot.innerHTML = createBadgeContent();
+    
+    // Store shadow root reference for event handling
+    badgeShadowRoot = shadowRoot;
 
     // Apply floating class if needed
     if (mode === 'floating') {
@@ -299,6 +543,19 @@
       if (badge) {
         badge.classList.add('kununu-badge--floating');
       }
+    }
+
+    // Add click handler to badge
+    const badge = shadowRoot.querySelector('.kununu-badge');
+    if (badge) {
+      badge.addEventListener('click', async () => {
+        // Only open preview if diagnostics is OFF
+        if (!diagnosticsEnabled) {
+          const config = await getDiagConfig();
+          const slug = config.kununuDiagTestSlug || 'de/sap';
+          openKununuPreviewOverlay(slug);
+        }
+      });
     }
 
     // Insert into DOM
@@ -322,6 +579,7 @@
     if (existingHost) {
       existingHost.remove();
       badgeInserted = false;
+      badgeShadowRoot = null;
       console.log('[Kununu Badge] Badge removed');
     }
   }
@@ -340,6 +598,7 @@
       if (existingHost) {
         existingHost.remove();
         badgeInserted = false;
+        badgeShadowRoot = null;
       }
       
       // Re-insert badge
@@ -410,11 +669,13 @@
         if (diagnosticsEnabled) {
           // Switch to diagnostics mode
           removeBadge();
+          closeKununuPreviewOverlay(); // Close preview overlay if open
           unmountDiagnosticsOverlay(); // Hide existing overlay first
           mountDiagnosticsOverlay(diagnosticsSlug); // Show with new settings
         } else {
           // Switch back to badge mode
           unmountDiagnosticsOverlay();
+          closeKununuPreviewOverlay(); // Close preview overlay if open
           insertBadge();
         }
       }
