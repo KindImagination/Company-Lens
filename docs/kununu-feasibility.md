@@ -206,3 +206,4 @@ The **Kununu Company Widget** approach provides the optimal balance of complianc
 ---
 
 *This feasibility study was conducted without implementing any network code or modifying the manifest.json file, as requested.*
+
