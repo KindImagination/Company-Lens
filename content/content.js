@@ -167,15 +167,27 @@
 
     let raw = null;
 
-    // Strategy 1: textContent of the anchor itself
-    if (anchor.textContent) {
+    // Strategy 1: Look for job-ad-display-du9bhi class and span inside it
+    const jobAdDisplay = document.querySelector('.job-ad-display-du9bhi');
+    if (jobAdDisplay) {
+      const span = jobAdDisplay.querySelector('span');
+      if (span && span.textContent) {
+        const text = span.textContent.trim();
+        if (text.length > 2 && text.length < 150) {
+          raw = text;
+        }
+      }
+    }
+
+    // Strategy 2: textContent of the anchor itself (fallback)
+    if (!raw && anchor.textContent) {
       const text = anchor.textContent.trim();
       if (text.length > 2 && text.length < 150) {
         raw = text;
       }
     }
 
-    // Strategy 2: Check attributes
+    // Strategy 3: Check attributes (fallback)
     if (!raw) {
       for (const attr of ['aria-label', 'title', 'alt']) {
         const value = anchor.getAttribute(attr);
@@ -186,7 +198,7 @@
       }
     }
 
-    // Strategy 3: Look for specific selectors within the anchor or nearby
+    // Strategy 4: Look for specific selectors within the anchor or nearby (fallback)
     if (!raw) {
       const selectors = [
         '[data-at="header-company-name"]',
@@ -343,7 +355,7 @@
    */
   async function computeCompanyAndSlug(anchor) {
     if (!anchor) {
-      console.warn('[Kununu AutoSlug] No anchor provided');
+      console.log('[Kununu AutoSlug] No anchor provided - skipping company extraction');
       currentCompanyInfo = null;
       currentSlug = null;
       currentCandidates = [];
@@ -354,7 +366,7 @@
     const extraction = extractCompanyFromAnchor(anchor);
     
     if (!extraction.raw) {
-      console.warn('[Kununu AutoSlug] No company name found at anchor');
+      console.log('[Kununu AutoSlug] No company name found - this may be a list/overview page');
       currentCompanyInfo = null;
       currentSlug = null;
       currentCandidates = [];
@@ -499,7 +511,13 @@
    * Returns an object with { element, mode } where mode is 'inline' or 'floating'
    */
   function findCompanyAnchor() {
-    // Heuristic selectors for StepStone company information
+    // Strategy 1: Look for job-ad-display-du9bhi element first
+    const jobAdDisplay = document.querySelector('.job-ad-display-du9bhi');
+    if (jobAdDisplay && isElementVisible(jobAdDisplay)) {
+      return { element: jobAdDisplay, mode: 'inline' };
+    }
+
+    // Strategy 2: Heuristic selectors for StepStone company information (fallback)
     const selectors = [
       // Company name in job header
       '[data-at="header-company-name"]',
@@ -530,7 +548,7 @@
       }
     }
 
-    // Fallback: look for any element with "Unternehmen" or "Company" text
+    // Strategy 3: Fallback - look for any element with "Unternehmen" or "Company" text
     const walker = document.createTreeWalker(
       document.body,
       NodeFilter.SHOW_TEXT,
@@ -551,6 +569,135 @@
 
     // No suitable anchor found - use floating mode
     return { element: document.body, mode: 'floating' };
+  }
+
+  /**
+   * Check if current page is a job detail page where badge should be shown
+   * Returns true if badge should be displayed, false otherwise
+   */
+  function isJobDetailPage() {
+    const url = window.location.href;
+    
+    // Check if we're on a job detail page by looking for job-ad-display-du9bhi element
+    const jobAdDisplay = document.querySelector('.job-ad-display-du9bhi');
+    if (jobAdDisplay) {
+      return true;
+    }
+    
+    // Check URL patterns for job detail pages
+    const jobDetailPatterns = [
+      /\/stellenangebote\/[^\/]+\/[0-9]+/,  // /stellenangebote/company-name/123456
+      /\/jobs\/[^\/]+\/[0-9]+/,            // /jobs/company-name/123456
+      /\/job\/[0-9]+/,                     // /job/123456
+      /\/stellen\/[0-9]+/                  // /stellen/123456
+    ];
+    
+    for (const pattern of jobDetailPatterns) {
+      if (pattern.test(url)) {
+        return true;
+      }
+    }
+    
+    // Check for job-related content indicators
+    const jobContentIndicators = [
+      '[data-at="header-company-name"]',
+      '[data-at="jobad-header-company-name"]',
+      'h1[class*="job-title"]',
+      '[class*="job-header"]',
+      '[class*="JobHeader"]'
+    ];
+    
+    for (const selector of jobContentIndicators) {
+      if (document.querySelector(selector)) {
+        return true;
+      }
+    }
+    
+    return false;
+  }
+
+  /**
+   * Gathers comprehensive diagnostic information about badge visibility
+   * Returns an object with all diagnostic data
+   */
+  function gatherBadgeDiagnostics() {
+    const url = window.location.href;
+    const diagnostics = {
+      timestamp: new Date().toISOString(),
+      url: url,
+      pageType: 'unknown',
+      badgeEnabled: isBadgeEnabled(),
+      jobDetailPage: false,
+      elements: {},
+      extraction: {},
+      anchor: {},
+      errors: []
+    };
+
+    try {
+      // Page type detection
+      diagnostics.jobDetailPage = isJobDetailPage();
+      diagnostics.pageType = diagnostics.jobDetailPage ? 'job-detail' : 'other';
+
+      // Check for key elements
+      diagnostics.elements = {
+        jobAdDisplay: {
+          exists: !!document.querySelector('.job-ad-display-du9bhi'),
+          element: document.querySelector('.job-ad-display-du9bhi'),
+          span: document.querySelector('.job-ad-display-du9bhi span'),
+          spanText: document.querySelector('.job-ad-display-du9bhi span')?.textContent?.trim()
+        },
+        headerCompanyName: {
+          exists: !!document.querySelector('[data-at="header-company-name"]'),
+          element: document.querySelector('[data-at="header-company-name"]'),
+          text: document.querySelector('[data-at="header-company-name"]')?.textContent?.trim()
+        },
+        jobadHeaderCompanyName: {
+          exists: !!document.querySelector('[data-at="jobad-header-company-name"]'),
+          element: document.querySelector('[data-at="jobad-header-company-name"]'),
+          text: document.querySelector('[data-at="jobad-header-company-name"]')?.textContent?.trim()
+        }
+      };
+
+      // Test company extraction
+      const testAnchor = document.querySelector('.job-ad-display-du9bhi') || 
+                       document.querySelector('[data-at="header-company-name"]') ||
+                       document.querySelector('[data-at="jobad-header-company-name"]') ||
+                       document.body;
+      
+      if (testAnchor) {
+        const extraction = extractCompanyFromAnchor(testAnchor);
+        diagnostics.extraction = {
+          anchor: testAnchor.tagName + (testAnchor.className ? '.' + testAnchor.className.split(' ').join('.') : ''),
+          raw: extraction.raw,
+          tokens: extraction.tokens,
+          success: !!extraction.raw
+        };
+      }
+
+      // Test anchor finding
+      const anchorResult = findCompanyAnchor();
+      diagnostics.anchor = {
+        element: anchorResult.element?.tagName + (anchorResult.element?.className ? '.' + anchorResult.element.className.split(' ').join('.') : ''),
+        mode: anchorResult.mode,
+        success: !!anchorResult.element
+      };
+
+      // Check for existing badge
+      diagnostics.elements.existingBadge = {
+        exists: !!document.getElementById(KUNUNU_BADGE_HOST_ID),
+        element: document.getElementById(KUNUNU_BADGE_HOST_ID)
+      };
+
+    } catch (error) {
+      diagnostics.errors.push({
+        type: 'diagnostic_error',
+        message: error.message,
+        stack: error.stack
+      });
+    }
+
+    return diagnostics;
   }
 
   /**
@@ -1158,6 +1305,12 @@
       return;
     }
 
+    // Check if this is a job detail page
+    if (!isJobDetailPage()) {
+      console.log('[Kununu Badge] Not a job detail page, skipping badge insertion');
+      return;
+    }
+
     // Find anchor point
     const { element, mode } = findCompanyAnchor();
     
@@ -1439,6 +1592,9 @@
     // Setup observer for SPA navigation
     setupMutationObserver();
   }
+
+  // Expose diagnostic function globally for diagnostics.js
+  window.gatherBadgeDiagnostics = gatherBadgeDiagnostics;
 
   // Start the extension
   init();

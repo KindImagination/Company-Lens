@@ -44,7 +44,7 @@
           position: fixed;
           top: 20px;
           right: 20px;
-          width: 450px;
+          width: 500px;
           max-width: calc(100vw - 40px);
           background: white;
           border-radius: 8px;
@@ -208,6 +208,68 @@
           overflow: hidden;
         }
         
+        .diag-section {
+          margin: 16px 0;
+          padding: 12px;
+          background: #f8f9fa;
+          border-radius: 6px;
+          border-left: 3px solid #6a11cb;
+        }
+        
+        .diag-section-title {
+          margin: 0 0 12px 0;
+          font-size: 14px;
+          font-weight: 600;
+          color: #333;
+        }
+        
+        .diag-badge-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 6px 0;
+          border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .diag-badge-item:last-child {
+          border-bottom: none;
+        }
+        
+        .diag-badge-label {
+          font-weight: 500;
+          color: #555;
+        }
+        
+        .diag-badge-value {
+          font-family: 'Courier New', monospace;
+          font-size: 12px;
+          color: #333;
+          max-width: 200px;
+          word-break: break-all;
+        }
+        
+        .diag-badge-status {
+          padding: 2px 6px;
+          border-radius: 4px;
+          font-size: 11px;
+          font-weight: 600;
+        }
+        
+        .diag-badge-status--success {
+          background: #e8f5e9;
+          color: #2e7d32;
+        }
+        
+        .diag-badge-status--warning {
+          background: #fff3e0;
+          color: #ef6c00;
+        }
+        
+        .diag-badge-status--error {
+          background: #ffebee;
+          color: #c62828;
+        }
+        
         .diag-footer {
           padding: 12px 16px;
           background: #f9f9f9;
@@ -233,6 +295,13 @@
             Testing iframe embedding of Kununu URLs on this StepStone page. Results show whether Content Security Policy allows embedding.
           </div>
           
+          <div class="diag-section">
+            <h3 class="diag-section-title">Badge Diagnostics</h3>
+            <div id="badgeDiagnostics">
+              <!-- Badge diagnostics will be inserted here -->
+            </div>
+          </div>
+          
           <table class="diag-table">
             <thead>
               <tr>
@@ -253,6 +322,149 @@
         </div>
       </div>
     `;
+  }
+
+  /**
+   * Creates badge diagnostics HTML from diagnostic data
+   */
+  function createBadgeDiagnosticsHTML(diagnostics) {
+    if (!diagnostics) {
+      return '<div class="diag-badge-item"><span class="diag-badge-label">Error:</span><span class="diag-badge-value">No diagnostic data available</span></div>';
+    }
+
+    const items = [];
+
+    // Page type and badge status
+    items.push({
+      label: 'Page Type',
+      value: diagnostics.pageType,
+      status: diagnostics.jobDetailPage ? 'success' : 'warning'
+    });
+
+    items.push({
+      label: 'Badge Enabled',
+      value: diagnostics.badgeEnabled ? 'Yes' : 'No',
+      status: diagnostics.badgeEnabled ? 'success' : 'error'
+    });
+
+    items.push({
+      label: 'Show badge on this tab',
+      value: diagnostics.badgeEnabled ? 'Enabled' : 'Disabled',
+      status: diagnostics.badgeEnabled ? 'success' : 'error'
+    });
+
+    items.push({
+      label: 'Job Detail Page',
+      value: diagnostics.jobDetailPage ? 'Yes' : 'No',
+      status: diagnostics.jobDetailPage ? 'success' : 'warning'
+    });
+
+    // Element detection
+    if (diagnostics.elements) {
+      items.push({
+        label: 'job-ad-display-du9bhi',
+        value: diagnostics.elements.jobAdDisplay?.exists ? 'Found' : 'Not found',
+        status: diagnostics.elements.jobAdDisplay?.exists ? 'success' : 'error'
+      });
+
+      if (diagnostics.elements.jobAdDisplay?.spanText) {
+        items.push({
+          label: 'Company Name',
+          value: diagnostics.elements.jobAdDisplay.spanText,
+          status: 'success'
+        });
+      }
+
+      items.push({
+        label: 'header-company-name',
+        value: diagnostics.elements.headerCompanyName?.exists ? 'Found' : 'Not found',
+        status: diagnostics.elements.headerCompanyName?.exists ? 'success' : 'warning'
+      });
+
+      items.push({
+        label: 'Existing Badge',
+        value: diagnostics.elements.existingBadge?.exists ? 'Present' : 'Not present',
+        status: diagnostics.elements.existingBadge?.exists ? 'success' : 'warning'
+      });
+    }
+
+    // Extraction results
+    if (diagnostics.extraction) {
+      items.push({
+        label: 'Extraction Success',
+        value: diagnostics.extraction.success ? 'Yes' : 'No',
+        status: diagnostics.extraction.success ? 'success' : 'error'
+      });
+
+      if (diagnostics.extraction.raw) {
+        items.push({
+          label: 'Extracted Name',
+          value: diagnostics.extraction.raw,
+          status: 'success'
+        });
+      }
+
+      if (diagnostics.extraction.tokens) {
+        const tokens = Object.entries(diagnostics.extraction.tokens)
+          .filter(([key, value]) => value)
+          .map(([key]) => key.toUpperCase())
+          .join(', ');
+        
+        if (tokens) {
+          items.push({
+            label: 'Detected Suffixes',
+            value: tokens,
+            status: 'success'
+          });
+        }
+      }
+    }
+
+    // Anchor results
+    if (diagnostics.anchor) {
+      items.push({
+        label: 'Anchor Found',
+        value: diagnostics.anchor.success ? 'Yes' : 'No',
+        status: diagnostics.anchor.success ? 'success' : 'error'
+      });
+
+      if (diagnostics.anchor.element) {
+        items.push({
+          label: 'Anchor Element',
+          value: diagnostics.anchor.element,
+          status: 'success'
+        });
+      }
+
+      if (diagnostics.anchor.mode) {
+        items.push({
+          label: 'Anchor Mode',
+          value: diagnostics.anchor.mode,
+          status: 'success'
+        });
+      }
+    }
+
+    // Errors
+    if (diagnostics.errors && diagnostics.errors.length > 0) {
+      items.push({
+        label: 'Errors',
+        value: `${diagnostics.errors.length} error(s)`,
+        status: 'error'
+      });
+    }
+
+    return items.map(item => `
+      <div class="diag-badge-item">
+        <span class="diag-badge-label">${item.label}:</span>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span class="diag-badge-value">${item.value}</span>
+          <span class="diag-badge-status diag-badge-status--${item.status}">
+            ${item.status === 'success' ? '✓' : item.status === 'warning' ? '⚠' : '✗'}
+          </span>
+        </div>
+      </div>
+    `).join('');
   }
 
   /**
@@ -463,6 +675,31 @@
     
     // Store the handler for cleanup
     diagOverlay._escapeHandler = handleEscape;
+    
+    // Gather badge diagnostics
+    try {
+      // Try to call the gatherBadgeDiagnostics function from content.js
+      if (typeof window.gatherBadgeDiagnostics === 'function') {
+        const badgeDiagnostics = window.gatherBadgeDiagnostics();
+        const badgeDiagnosticsHTML = createBadgeDiagnosticsHTML(badgeDiagnostics);
+        const badgeDiagnosticsContainer = diagShadowRoot.getElementById('badgeDiagnostics');
+        if (badgeDiagnosticsContainer) {
+          badgeDiagnosticsContainer.innerHTML = badgeDiagnosticsHTML;
+        }
+      } else {
+        // Fallback if function is not available
+        const badgeDiagnosticsContainer = diagShadowRoot.getElementById('badgeDiagnostics');
+        if (badgeDiagnosticsContainer) {
+          badgeDiagnosticsContainer.innerHTML = '<div class="diag-badge-item"><span class="diag-badge-label">Error:</span><span class="diag-badge-value">Badge diagnostics not available</span></div>';
+        }
+      }
+    } catch (error) {
+      console.error('[Kununu-Widget-Spike] Error gathering badge diagnostics:', error);
+      const badgeDiagnosticsContainer = diagShadowRoot.getElementById('badgeDiagnostics');
+      if (badgeDiagnosticsContainer) {
+        badgeDiagnosticsContainer.innerHTML = '<div class="diag-badge-item"><span class="diag-badge-label">Error:</span><span class="diag-badge-value">' + error.message + '</span></div>';
+      }
+    }
     
     // Run probes
     runProbes(slug);
