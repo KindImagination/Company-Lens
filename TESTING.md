@@ -13,7 +13,7 @@
 6. Verify extension appears with no errors
 ```
 
-### 2. Basic Functionality Test
+### 2. Basic Functionality Test - StepStone
 
 **Navigate to StepStone:**
 - Go to: https://www.stepstone.de
@@ -25,6 +25,25 @@
 ✓ Badge has gradient blue background
 ✓ Badge shows "K" icon
 ✓ No console errors in DevTools
+
+### 3. Basic Functionality Test - Indeed
+
+**Navigate to Indeed:**
+- Go to: https://de.indeed.com
+- Search for any job (e.g., "Software Developer")
+- Click on a job listing
+
+**Expected Result:**
+✓ Badge appears near the company name
+✓ Badge displays "Kununu: —"
+✓ Badge has gradient blue background
+✓ Badge shows "K" icon
+✓ No console errors in DevTools
+
+**Test Both URL Patterns:**
+- Direct job view: URL contains `/viewjob?jk=`
+- Listing with selection: URL contains `/?vjk=`
+- Badge should appear in both cases
 
 ### 3. Badge Positioning Tests
 
@@ -71,11 +90,17 @@ document.querySelector('#kununu-badge-host').style.display = 'none';
 
 ### 5. SPA Navigation Test
 
-**Steps:**
+**Test on StepStone:**
 1. Open any job listing on StepStone
 2. Note the badge position
 3. Click "Back to results" (if available)
 4. Click another job listing
+
+**Test on Indeed:**
+1. Open Indeed job search results
+2. Click on a job (opens in side panel with `/?vjk=`)
+3. Click on another job in the list
+4. Badge should update for each job
 5. Observe badge behavior
 
 **Expected:**

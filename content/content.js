@@ -1,9 +1,13 @@
 /**
- * Kununu Badge Content Script for StepStone
+ * Kununu Badge Content Script for Job Sites
  * 
- * Injects a styled badge showing Kununu rating (placeholder) on StepStone pages.
+ * Injects a styled badge showing Kununu rating (placeholder) on StepStone and Indeed pages.
  * Uses Shadow DOM for complete style isolation.
  * Implements MutationObserver for SPA navigation resilience.
+ * 
+ * Supported platforms:
+ * - StepStone (*.stepstone.de)
+ * - Indeed (*.indeed.com, *.indeed.de, *.indeed.co.uk, etc.)
  */
 
 (function() {
@@ -167,14 +171,36 @@
 
     let raw = null;
 
-    // Strategy 1: Look for job-ad-display-du9bhi class and span inside it
-    const jobAdDisplay = document.querySelector('.job-ad-display-du9bhi');
-    if (jobAdDisplay) {
-      const span = jobAdDisplay.querySelector('span');
-      if (span && span.textContent) {
-        const text = span.textContent.trim();
+    // Strategy 1a: Indeed - Look for e1wnkr790 class (Indeed company name container)
+    const indeedCompany = document.querySelector('.e1wnkr790');
+    if (indeedCompany) {
+      // Try to find anchor tag inside
+      const companyLink = indeedCompany.querySelector('a');
+      if (companyLink && companyLink.textContent) {
+        const text = companyLink.textContent.trim();
         if (text.length > 2 && text.length < 150) {
           raw = text;
+        }
+      }
+      // Fallback to direct textContent if no anchor found
+      if (!raw && indeedCompany.textContent) {
+        const text = indeedCompany.textContent.trim();
+        if (text.length > 2 && text.length < 150) {
+          raw = text;
+        }
+      }
+    }
+
+    // Strategy 1b: StepStone - Look for job-ad-display-du9bhi class and span inside it
+    if (!raw) {
+      const jobAdDisplay = document.querySelector('.job-ad-display-du9bhi');
+      if (jobAdDisplay) {
+        const span = jobAdDisplay.querySelector('span');
+        if (span && span.textContent) {
+          const text = span.textContent.trim();
+          if (text.length > 2 && text.length < 150) {
+            raw = text;
+          }
         }
       }
     }
@@ -511,20 +537,30 @@
    * Returns an object with { element, mode } where mode is 'inline' or 'floating'
    */
   function findCompanyAnchor() {
-    // Strategy 1: Look for job-ad-display-du9bhi element first
+    // Strategy 1a: Indeed - Look for e1wnkr790 element (Indeed company name container)
+    const indeedCompany = document.querySelector('.e1wnkr790');
+    if (indeedCompany && isElementVisible(indeedCompany)) {
+      return { element: indeedCompany, mode: 'inline' };
+    }
+
+    // Strategy 1b: StepStone - Look for job-ad-display-du9bhi element
     const jobAdDisplay = document.querySelector('.job-ad-display-du9bhi');
     if (jobAdDisplay && isElementVisible(jobAdDisplay)) {
       return { element: jobAdDisplay, mode: 'inline' };
     }
 
-    // Strategy 2: Heuristic selectors for StepStone company information (fallback)
+    // Strategy 2: Heuristic selectors for StepStone and Indeed (fallback)
     const selectors = [
-      // Company name in job header
+      // Indeed selectors
+      '.css-1ygeylu',
+      '[class*="e1wnkr"]',
+      '[data-company-name]',
+      // StepStone selectors
       '[data-at="header-company-name"]',
       'h1[class*="company"] + *',
       '[class*="company-name"]',
       '[class*="CompanyName"]',
-      // Fallback to any heading containing "Unternehmen"
+      // Fallback to any heading containing "Unternehmen" or "Company"
       'h2:has-text("Unternehmen")',
       'h3:has-text("Unternehmen")',
       // Generic job header areas
@@ -578,7 +614,13 @@
   function isJobDetailPage() {
     const url = window.location.href;
     
-    // Check if we're on a job detail page by looking for job-ad-display-du9bhi element
+    // Check for Indeed-specific elements (Indeed company name container)
+    const indeedCompany = document.querySelector('.e1wnkr790');
+    if (indeedCompany) {
+      return true;
+    }
+    
+    // Check if we're on a job detail page by looking for job-ad-display-du9bhi element (StepStone)
     const jobAdDisplay = document.querySelector('.job-ad-display-du9bhi');
     if (jobAdDisplay) {
       return true;
@@ -586,6 +628,10 @@
     
     // Check URL patterns for job detail pages
     const jobDetailPatterns = [
+      // Indeed patterns
+      /\/viewjob\?jk=/,                    // Indeed: /viewjob?jk=<job_id>
+      /\/\?vjk=/,                          // Indeed: /?vjk=<job_id> (selected job in listing)
+      // StepStone patterns
       /\/stellenangebote\/[^\/]+\/[0-9]+/,  // /stellenangebote/company-name/123456
       /\/jobs\/[^\/]+\/[0-9]+/,            // /jobs/company-name/123456
       /\/job\/[0-9]+/,                     // /job/123456
@@ -600,6 +646,11 @@
     
     // Check for job-related content indicators
     const jobContentIndicators = [
+      // Indeed indicators
+      '.e1wnkr790',
+      '.css-1ygeylu',
+      '[data-company-name]',
+      // StepStone indicators
       '[data-at="header-company-name"]',
       '[data-at="jobad-header-company-name"]',
       'h1[class*="job-title"]',
@@ -641,6 +692,14 @@
 
       // Check for key elements
       diagnostics.elements = {
+        // Indeed elements
+        indeedCompany: {
+          exists: !!document.querySelector('.e1wnkr790'),
+          element: document.querySelector('.e1wnkr790'),
+          link: document.querySelector('.e1wnkr790 a'),
+          linkText: document.querySelector('.e1wnkr790 a')?.textContent?.trim()
+        },
+        // StepStone elements
         jobAdDisplay: {
           exists: !!document.querySelector('.job-ad-display-du9bhi'),
           element: document.querySelector('.job-ad-display-du9bhi'),
@@ -660,7 +719,8 @@
       };
 
       // Test company extraction
-      const testAnchor = document.querySelector('.job-ad-display-du9bhi') || 
+      const testAnchor = document.querySelector('.e1wnkr790') ||
+                       document.querySelector('.job-ad-display-du9bhi') || 
                        document.querySelector('[data-at="header-company-name"]') ||
                        document.querySelector('[data-at="jobad-header-company-name"]') ||
                        document.body;

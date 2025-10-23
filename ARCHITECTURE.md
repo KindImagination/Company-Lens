@@ -58,7 +58,7 @@
 ```
 Page Load
    │
-   ├─ Chrome detects stepstone.de URL
+   ├─ Chrome detects stepstone.de or indeed.com URL
    │
    ├─ Injects content.js at document_idle
    │
@@ -71,7 +71,10 @@ Page Load
    │
    ├─ Call insertBadge()
    │     │
+   │     ├─ Detect platform (StepStone or Indeed)
    │     ├─ Find company anchor element
+   │     │     ├─ Indeed: Look for .e1wnkr790
+   │     │     ├─ StepStone: Look for .job-ad-display-du9bhi
    │     │     ├─ Success → Inline mode
    │     │     └─ Fail → Floating mode
    │     │
@@ -156,7 +159,11 @@ User clicks extension icon
   "manifest_version": 3,
   "content_scripts": [
     {
-      "matches": ["https://*.stepstone.de/*"],
+      "matches": [
+        "https://*.stepstone.de/*",
+        "https://*.indeed.com/*",
+        "https://*.indeed.de/*"
+      ],
       "js": ["content/content.js"],
       "run_at": "document_idle"
     }

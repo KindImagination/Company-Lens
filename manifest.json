@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Kununu Badge for StepStone",
+  "name": "Kununu Badge for Job Sites",
   "version": "1.0.0",
-  "description": "Displays a Kununu rating badge on StepStone company pages",
+  "description": "Displays a Kununu rating badge on StepStone and Indeed job pages",
   "icons": {
     "16": "icons/icon16.png",
     "32": "icons/icon32.png",
@@ -21,7 +21,19 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://*.stepstone.de/*"],
+      "matches": [
+        "https://*.stepstone.de/*",
+        "https://*.indeed.com/*",
+        "https://*.indeed.de/*",
+        "https://*.indeed.co.uk/*",
+        "https://*.indeed.ca/*",
+        "https://*.indeed.fr/*",
+        "https://*.indeed.es/*",
+        "https://*.indeed.it/*",
+        "https://*.indeed.nl/*",
+        "https://*.indeed.at/*",
+        "https://*.indeed.ch/*"
+      ],
       "js": ["content/diagnostics.js", "content/content.js"],
       "run_at": "document_idle"
     }

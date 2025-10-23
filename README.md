@@ -1,6 +1,6 @@
-# Kununu Badge for StepStone
+# Kununu Badge for Job Sites
 
-A minimal, production-ready Manifest V3 Chrome extension that displays a Kununu rating badge on StepStone job pages.
+A minimal, production-ready Manifest V3 Chrome extension that displays a Kununu rating badge on StepStone and Indeed job pages.
 
 ## 📋 Features
 
@@ -30,7 +30,7 @@ A minimal, production-ready Manifest V3 Chrome extension that displays a Kununu 
    - Select the folder and click "Select Folder"
 
 4. **Verify installation**:
-   - You should see "Kununu Badge for StepStone" appear in your extensions list
+   - You should see "Kununu Badge for Job Sites" appear in your extensions list
    - Ensure it's enabled (toggle switch is blue/on)
 
 ## 🧪 Testing
@@ -51,7 +51,23 @@ A minimal, production-ready Manifest V3 Chrome extension that displays a Kununu 
    - Without reloading the page, click on another job listing
    - The badge should re-appear on the new job page (SPA resilience)
 
-4. **Test the toggle**:
+### Test on Indeed Pages
+
+1. **Navigate to Indeed**:
+   - Go to [https://de.indeed.com](https://de.indeed.com)
+   - Search for any job listing
+
+2. **Open a job detail page**:
+   - Click on any job posting to view details
+   - The badge should appear near the company name
+
+3. **Test both URL patterns**:
+   - Direct job view: `/viewjob?jk=...`
+   - Listing with selection: `/?vjk=...`
+
+### Toggle Control
+
+1. **Test the toggle**:
    - Click the extension icon in Chrome toolbar
    - Toggle "Show badge on this tab" off
    - Badge should disappear

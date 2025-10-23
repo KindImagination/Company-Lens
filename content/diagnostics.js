@@ -1,8 +1,10 @@
 /**
  * Kununu Widget Spike Diagnostics Module
  * 
- * Tests whether Kununu pages/widgets can be embedded via iframe on StepStone pages.
+ * Tests whether Kununu pages/widgets can be embedded via iframe on job site pages.
  * Uses Shadow DOM for complete isolation and provides a diagnostic overlay.
+ * 
+ * Supported platforms: StepStone, Indeed
  */
 
 (function() {
