@@ -475,10 +475,24 @@
           box-sizing: border-box;
           min-width: 120px; /* Stable width to prevent layout shift */
           transition: transform 120ms ease;
+          position: relative;
         }
         
         .kununu-badge:hover {
           transform: translateY(-1px) scale(1.01);
+        }
+        
+        .kununu-badge--has-comparison::after {
+          content: '';
+          position: absolute;
+          top: -2px;
+          right: -2px;
+          width: 8px;
+          height: 8px;
+          background: #4caf50;
+          border-radius: 50%;
+          border: 2px solid white;
+          box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
         }
         
         .kununu-badge__icon {
@@ -747,6 +761,19 @@
       diagnostics.elements.existingBadge = {
         exists: !!document.getElementById(KUNUNU_BADGE_HOST_ID),
         element: document.getElementById(KUNUNU_BADGE_HOST_ID)
+      };
+
+      // Test full job extraction
+      const jobExtractionResult = extractJobDescription();
+      diagnostics.jobExtraction = {
+        success: jobExtractionResult.success,
+        title: jobExtractionResult.jobData?.title || 'N/A',
+        company: jobExtractionResult.jobData?.company || 'N/A',
+        descriptionLength: jobExtractionResult.jobData?.description?.length || 0,
+        descriptionPreview: jobExtractionResult.jobData?.description?.substring(0, 500) || 'N/A',
+        fullDescription: jobExtractionResult.jobData?.description || '',
+        requirementsLength: jobExtractionResult.jobData?.requirements?.length || 0,
+        error: jobExtractionResult.error
       };
 
     } catch (error) {
@@ -1414,13 +1441,57 @@
         }
       }
 
-      // Add click handler to badge
+      // Add click handler to badge and check for existing comparison results
       const badge = shadowRoot.querySelector('.kununu-badge');
       if (badge) {
-        badge.addEventListener('click', () => {
+        // Check if comparison results exist for this job
+        chrome.storage.local.get('companyLens_lastComparison', (result) => {
+          if (result.companyLens_lastComparison && result.companyLens_lastComparison.comparison) {
+            const lastJobUrl = result.companyLens_lastComparison.jobDescription?.url;
+            const currentUrl = window.location.href;
+            
+            // Add visual indicator if comparison exists for this job
+            if (lastJobUrl === currentUrl) {
+              badge.classList.add('kununu-badge--has-comparison');
+              badge.title = 'Click to view CV comparison results';
+              console.log('[Company Lens] Badge updated: comparison results available');
+            }
+          }
+        });
+        
+        badge.addEventListener('click', async () => {
           // Only open preview if diagnostics is OFF
           if (!diagnosticsEnabled) {
-            // Use stored slug and company info
+            // Check if there are comparison results
+            try {
+              const result = await chrome.storage.local.get('companyLens_lastComparison');
+              const hasComparison = result.companyLens_lastComparison && 
+                                   result.companyLens_lastComparison.comparison;
+              
+              // If comparison results exist and on same job, open side panel
+              if (hasComparison) {
+                const lastJobUrl = result.companyLens_lastComparison.jobDescription?.url;
+                const currentUrl = window.location.href;
+                
+                // If it's the same job, open side panel with results
+                if (lastJobUrl === currentUrl) {
+                  console.log('[Company Lens] Opening side panel with existing comparison results');
+                  chrome.runtime.sendMessage({ type: 'OPEN_SIDE_PANEL' }, (response) => {
+                    if (chrome.runtime.lastError) {
+                      console.warn('[Company Lens] Could not open side panel:', chrome.runtime.lastError);
+                      // Fallback to Kununu preview
+                      const slug = currentSlug || 'de/sap';
+                      openKununuPreviewOverlay(slug, currentCompanyInfo, currentCandidates);
+                    }
+                  });
+                  return;
+                }
+              }
+            } catch (error) {
+              console.warn('[Company Lens] Error checking comparison results:', error);
+            }
+            
+            // Otherwise, open Kununu preview
             const slug = currentSlug || 'de/sap';
             console.log('[Kununu AutoSlug] Opening preview with slug:', slug);
             openKununuPreviewOverlay(slug, currentCompanyInfo, currentCandidates);
@@ -1687,7 +1758,14 @@
         };
       }
 
-      console.log('[Company Lens] Job extracted:', jobData.title);
+      // Log complete job data for diagnostics
+      console.log('[Company Lens] Job extracted successfully:');
+      console.log('  Title:', jobData.title);
+      console.log('  Company:', jobData.company);
+      console.log('  Description length:', jobData.description.length, 'characters');
+      console.log('  Requirements length:', jobData.requirements.length, 'characters');
+      console.log('  Full job data:', jobData);
+      
       return {
         success: true,
         jobData: jobData
@@ -1815,19 +1893,40 @@
       }
     }
 
-    // Extract description
+    // Extract description with multiple strategies
     const descSelectors = [
+      // Primary: eu4oa1w0 class (job component)
+      '.eu4oa1w0',
+      // Legacy selectors
       '#jobDescriptionText',
       'div[id*="jobDescription"]',
       'div[class*="jobDescription"]',
-      '.jobsearch-jobDescriptionText'
+      '.jobsearch-jobDescriptionText',
+      // Fallback: jobsearch-JobComponent
+      '.jobsearch-JobComponent'
     ];
 
     for (const selector of descSelectors) {
       const descEl = document.querySelector(selector);
       if (descEl && descEl.textContent && descEl.textContent.length > 100) {
         jobData.description = descEl.textContent.trim();
+        console.log('[Company Lens] Indeed: Found description with selector:', selector, 
+                    '- Length:', jobData.description.length);
         break;
+      }
+    }
+
+    // If still no description, try all elements with eu4oa1w0 class
+    if (!jobData.description || jobData.description.length < 100) {
+      const allJobComponents = document.querySelectorAll('.eu4oa1w0');
+      console.log('[Company Lens] Indeed: Found', allJobComponents.length, 'elements with .eu4oa1w0 class');
+      
+      for (const component of allJobComponents) {
+        if (component.textContent && component.textContent.length > 100) {
+          jobData.description = component.textContent.trim();
+          console.log('[Company Lens] Indeed: Using .eu4oa1w0 component - Length:', jobData.description.length);
+          break;
+        }
       }
     }
 
@@ -1882,12 +1981,15 @@
         }
       });
 
-      // Open side panel
+      // Request background to open side panel
       try {
-        await chrome.sidePanel.open({ windowId: chrome.windows.WINDOW_ID_CURRENT });
+        chrome.runtime.sendMessage({ type: 'OPEN_SIDE_PANEL' }, (response) => {
+          if (chrome.runtime.lastError) {
+            console.warn('[Company Lens] Could not open side panel:', chrome.runtime.lastError);
+          }
+        });
       } catch (error) {
         console.warn('[Company Lens] Could not open side panel:', error);
-        // Side panel might not be available, continue anyway
       }
 
       // Send comparison request to background script

@@ -250,6 +250,27 @@
           word-break: break-all;
         }
         
+        .diag-badge-value-long {
+          font-family: 'Courier New', monospace;
+          font-size: 11px;
+          color: #333;
+          background: #f5f5f5;
+          padding: 8px;
+          border-radius: 4px;
+          border: 1px solid #ddd;
+          max-height: 200px;
+          overflow-y: auto;
+          white-space: pre-wrap;
+          word-break: break-word;
+          flex: 1;
+          margin: 0;
+        }
+        
+        .diag-badge-item--long {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+        
         .diag-badge-status {
           padding: 2px 6px;
           border-radius: 4px;
@@ -422,6 +443,67 @@
       }
     }
 
+    // Job extraction results
+    if (diagnostics.jobExtraction) {
+      items.push({
+        label: '--- Job Extraction ---',
+        value: '',
+        status: 'info'
+      });
+
+      items.push({
+        label: 'Extraction Success',
+        value: diagnostics.jobExtraction.success ? 'Yes' : 'No',
+        status: diagnostics.jobExtraction.success ? 'success' : 'error'
+      });
+
+      if (diagnostics.jobExtraction.error) {
+        items.push({
+          label: 'Extraction Error',
+          value: diagnostics.jobExtraction.error,
+          status: 'error'
+        });
+      }
+
+      if (diagnostics.jobExtraction.title) {
+        items.push({
+          label: 'Job Title',
+          value: diagnostics.jobExtraction.title,
+          status: 'success'
+        });
+      }
+
+      if (diagnostics.jobExtraction.company) {
+        items.push({
+          label: 'Company',
+          value: diagnostics.jobExtraction.company,
+          status: 'success'
+        });
+      }
+
+      items.push({
+        label: 'Description Length',
+        value: `${diagnostics.jobExtraction.descriptionLength} characters`,
+        status: diagnostics.jobExtraction.descriptionLength > 100 ? 'success' : 'error'
+      });
+
+      items.push({
+        label: 'Requirements Length',
+        value: `${diagnostics.jobExtraction.requirementsLength} characters`,
+        status: diagnostics.jobExtraction.requirementsLength > 0 ? 'success' : 'warning'
+      });
+
+      // Add full job description preview
+      if (diagnostics.jobExtraction.fullDescription) {
+        items.push({
+          label: 'Description Preview (First 500 chars)',
+          value: diagnostics.jobExtraction.fullDescription.substring(0, 500) + (diagnostics.jobExtraction.fullDescription.length > 500 ? '...' : ''),
+          status: 'info',
+          isLongText: true
+        });
+      }
+    }
+
     // Anchor results
     if (diagnostics.anchor) {
       items.push({
@@ -456,17 +538,38 @@
       });
     }
 
-    return items.map(item => `
-      <div class="diag-badge-item">
-        <span class="diag-badge-label">${item.label}:</span>
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <span class="diag-badge-value">${item.value}</span>
-          <span class="diag-badge-status diag-badge-status--${item.status}">
-            ${item.status === 'success' ? '✓' : item.status === 'warning' ? '⚠' : '✗'}
-          </span>
+    return items.map(item => {
+      const isLongText = item.isLongText || item.value.length > 100;
+      const statusIcon = item.status === 'success' ? '✓' : 
+                        item.status === 'warning' ? '⚠' : 
+                        item.status === 'info' ? 'ℹ' : '✗';
+      
+      if (isLongText) {
+        return `
+          <div class="diag-badge-item diag-badge-item--long">
+            <span class="diag-badge-label">${item.label}:</span>
+            <div style="display: flex; align-items: flex-start; gap: 8px; margin-top: 4px;">
+              <pre class="diag-badge-value-long">${item.value}</pre>
+              <span class="diag-badge-status diag-badge-status--${item.status}">
+                ${statusIcon}
+              </span>
+            </div>
+          </div>
+        `;
+      }
+      
+      return `
+        <div class="diag-badge-item">
+          <span class="diag-badge-label">${item.label}:</span>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="diag-badge-value">${item.value}</span>
+            <span class="diag-badge-status diag-badge-status--${item.status}">
+              ${statusIcon}
+            </span>
+          </div>
         </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
   }
 
   /**

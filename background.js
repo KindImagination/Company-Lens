@@ -31,8 +31,61 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true; // Keep channel open for async response
   }
 
+  if (message.type === 'OPEN_SIDE_PANEL') {
+    handleOpenSidePanel(sender)
+      .then(result => sendResponse(result))
+      .catch(error => sendResponse({
+        success: false,
+        error: error.message
+      }));
+    return true; // Keep channel open for async response
+  }
+
   return false;
 });
+
+/**
+ * Handles opening the side panel
+ * @param {object} sender - Message sender
+ * @returns {Promise<object>}
+ */
+async function handleOpenSidePanel(sender) {
+  try {
+    // Get the window ID from the sender's tab
+    const windowId = sender.tab?.windowId;
+    
+    if (!windowId) {
+      console.warn('[Company Lens] No window ID available');
+      return {
+        success: false,
+        error: 'Could not determine window ID'
+      };
+    }
+
+    // Check if sidePanel API is available
+    if (!chrome.sidePanel) {
+      console.warn('[Company Lens] Side panel API not available');
+      return {
+        success: false,
+        error: 'Side panel API not available. Chrome 114+ required.'
+      };
+    }
+
+    // Open the side panel
+    await chrome.sidePanel.open({ windowId: windowId });
+    
+    console.log('[Company Lens] Side panel opened successfully');
+    return {
+      success: true
+    };
+  } catch (error) {
+    console.error('[Company Lens] Error opening side panel:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}
 
 /**
  * Handles CV comparison request
