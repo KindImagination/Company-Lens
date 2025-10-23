@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Kununu Badge for Job Sites",
-  "version": "1.0.0",
-  "description": "Displays a Kununu rating badge on StepStone and Indeed job pages",
+  "name": "Company Lens",
+  "version": "2.0.0",
+  "description": "Compare your CV with job postings on StepStone and Indeed using AI, plus Kununu ratings",
   "icons": {
     "16": "icons/icon16.png",
     "32": "icons/icon32.png",
@@ -17,7 +17,7 @@
       "48": "icons/icon48.png",
       "128": "icons/icon128.png"
     },
-    "default_title": "Kununu Badge Settings"
+    "default_title": "Company Lens Settings"
   },
   "content_scripts": [
     {
@@ -34,14 +34,29 @@
         "https://*.indeed.at/*",
         "https://*.indeed.ch/*"
       ],
-      "js": ["content/diagnostics.js", "content/content.js"],
+      "js": ["lib/pdf.min.js", "lib/mammoth.browser.min.js", "content/diagnostics.js", "content/content.js"],
       "run_at": "document_idle"
     }
   ],
   "permissions": [
     "activeTab",
-    "storage"
+    "storage",
+    "sidePanel"
   ],
-  "host_permissions": []
+  "host_permissions": [
+    "https://api.deepseek.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "side_panel": {
+    "default_path": "sidepanel/sidepanel.html"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["lib/pdf.worker.min.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
 }
 

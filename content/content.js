@@ -1656,6 +1656,310 @@
   // Expose diagnostic function globally for diagnostics.js
   window.gatherBadgeDiagnostics = gatherBadgeDiagnostics;
 
+  /**
+   * Extracts job description from the current page
+   * Supports StepStone and Indeed
+   */
+  function extractJobDescription() {
+    const url = window.location.href;
+    let jobData = {
+      title: '',
+      company: '',
+      description: '',
+      requirements: '',
+      benefits: '',
+      url: url
+    };
+
+    try {
+      // Detect platform
+      if (url.includes('stepstone.de')) {
+        jobData = extractStepStoneJob();
+      } else if (url.includes('indeed.com') || url.includes('indeed.de')) {
+        jobData = extractIndeedJob();
+      }
+
+      // Validate we got some data
+      if (!jobData.description || jobData.description.length < 50) {
+        return {
+          success: false,
+          error: 'Could not extract job description from this page'
+        };
+      }
+
+      console.log('[Company Lens] Job extracted:', jobData.title);
+      return {
+        success: true,
+        jobData: jobData
+      };
+    } catch (error) {
+      console.error('[Company Lens] Error extracting job:', error);
+      return {
+        success: false,
+        error: 'Failed to extract job description'
+      };
+    }
+  }
+
+  /**
+   * Extract job data from StepStone
+   */
+  function extractStepStoneJob() {
+    const jobData = {
+      title: '',
+      company: '',
+      description: '',
+      requirements: '',
+      benefits: '',
+      url: window.location.href
+    };
+
+    // Extract title
+    const titleSelectors = [
+      'h1[data-at="header-job-title"]',
+      'h1[class*="job-title"]',
+      'h1[class*="JobTitle"]',
+      '.job-ad-display-du9bhi h1'
+    ];
+    
+    for (const selector of titleSelectors) {
+      const titleEl = document.querySelector(selector);
+      if (titleEl && titleEl.textContent) {
+        jobData.title = titleEl.textContent.trim();
+        break;
+      }
+    }
+
+    // Extract company
+    const companyEl = document.querySelector('.job-ad-display-du9bhi span');
+    if (companyEl && companyEl.textContent) {
+      jobData.company = companyEl.textContent.trim();
+    }
+
+    // Extract full description
+    const descSelectors = [
+      '[data-at="jobad-description"]',
+      '.job-description',
+      'article[class*="JobAd"]',
+      'div[class*="job-ad-content"]'
+    ];
+
+    for (const selector of descSelectors) {
+      const descEl = document.querySelector(selector);
+      if (descEl && descEl.textContent && descEl.textContent.length > 100) {
+        jobData.description = descEl.textContent.trim();
+        break;
+      }
+    }
+
+    // Try to extract requirements separately
+    const requirementsKeywords = ['anforderungen', 'requirements', 'qualifications', 'voraussetzungen'];
+    const allSections = document.querySelectorAll('h2, h3, h4');
+    
+    for (const heading of allSections) {
+      const headingText = heading.textContent.toLowerCase();
+      if (requirementsKeywords.some(kw => headingText.includes(kw))) {
+        let nextEl = heading.nextElementSibling;
+        let reqText = '';
+        while (nextEl && !nextEl.matches('h2, h3, h4')) {
+          reqText += nextEl.textContent + ' ';
+          nextEl = nextEl.nextElementSibling;
+        }
+        if (reqText.length > 50) {
+          jobData.requirements = reqText.trim();
+          break;
+        }
+      }
+    }
+
+    return jobData;
+  }
+
+  /**
+   * Extract job data from Indeed
+   */
+  function extractIndeedJob() {
+    const jobData = {
+      title: '',
+      company: '',
+      description: '',
+      requirements: '',
+      benefits: '',
+      url: window.location.href
+    };
+
+    // Extract title
+    const titleSelectors = [
+      'h1.jobsearch-JobInfoHeader-title',
+      'h1[class*="jobTitle"]',
+      '.jobsearch-JobInfoHeader-title span',
+      'h1'
+    ];
+    
+    for (const selector of titleSelectors) {
+      const titleEl = document.querySelector(selector);
+      if (titleEl && titleEl.textContent && titleEl.textContent.length > 5) {
+        jobData.title = titleEl.textContent.trim();
+        break;
+      }
+    }
+
+    // Extract company
+    const companyEl = document.querySelector('.e1wnkr790');
+    if (companyEl) {
+      const companyLink = companyEl.querySelector('a');
+      if (companyLink && companyLink.textContent) {
+        jobData.company = companyLink.textContent.trim();
+      } else if (companyEl.textContent) {
+        jobData.company = companyEl.textContent.trim();
+      }
+    }
+
+    // Extract description
+    const descSelectors = [
+      '#jobDescriptionText',
+      'div[id*="jobDescription"]',
+      'div[class*="jobDescription"]',
+      '.jobsearch-jobDescriptionText'
+    ];
+
+    for (const selector of descSelectors) {
+      const descEl = document.querySelector(selector);
+      if (descEl && descEl.textContent && descEl.textContent.length > 100) {
+        jobData.description = descEl.textContent.trim();
+        break;
+      }
+    }
+
+    return jobData;
+  }
+
+  /**
+   * Handle comparison request from popup
+   */
+  async function handleComparisonRequest() {
+    try {
+      console.log('[Company Lens] Starting CV comparison...');
+
+      // Extract job description
+      const jobResult = extractJobDescription();
+      
+      if (!jobResult.success) {
+        return {
+          success: false,
+          error: jobResult.error || 'Could not extract job description'
+        };
+      }
+
+      // Get CV and API key from storage
+      const storageData = await chrome.storage.local.get([
+        'companyLens_cvText',
+        'companyLens_apiKey'
+      ]);
+
+      const cvText = storageData.companyLens_cvText;
+      const apiKey = storageData.companyLens_apiKey;
+
+      if (!cvText) {
+        return {
+          success: false,
+          error: 'No CV found. Please upload your CV first.'
+        };
+      }
+
+      if (!apiKey) {
+        return {
+          success: false,
+          error: 'No API key found. Please set your DeepSeek API key.'
+        };
+      }
+
+      // Save job data and show loading in storage
+      await chrome.storage.local.set({
+        companyLens_lastComparison: {
+          loading: true,
+          jobDescription: jobResult.jobData
+        }
+      });
+
+      // Open side panel
+      try {
+        await chrome.sidePanel.open({ windowId: chrome.windows.WINDOW_ID_CURRENT });
+      } catch (error) {
+        console.warn('[Company Lens] Could not open side panel:', error);
+        // Side panel might not be available, continue anyway
+      }
+
+      // Send comparison request to background script
+      chrome.runtime.sendMessage({
+        type: 'COMPARE_CV',
+        data: {
+          cvText: cvText,
+          jobDescription: jobResult.jobData,
+          apiKey: apiKey
+        }
+      }, async response => {
+        if (chrome.runtime.lastError) {
+          console.error('[Company Lens] Runtime error:', chrome.runtime.lastError);
+          await chrome.storage.local.set({
+            companyLens_lastComparison: {
+              error: 'Extension error. Please try again.',
+              jobDescription: jobResult.jobData
+            }
+          });
+          return;
+        }
+
+        if (response && response.success) {
+          // Save comparison results
+          await chrome.storage.local.set({
+            companyLens_lastComparison: {
+              comparison: response.comparison,
+              jobDescription: jobResult.jobData
+            }
+          });
+          console.log('[Company Lens] Comparison completed successfully');
+        } else {
+          // Save error
+          await chrome.storage.local.set({
+            companyLens_lastComparison: {
+              error: response?.error || 'Comparison failed',
+              jobDescription: jobResult.jobData
+            }
+          });
+        }
+      });
+
+      return {
+        success: true,
+        message: 'Comparison started'
+      };
+    } catch (error) {
+      console.error('[Company Lens] Error in handleComparisonRequest:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Listen for messages from popup
+   */
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.type === 'START_COMPARISON') {
+      handleComparisonRequest()
+        .then(result => sendResponse(result))
+        .catch(error => sendResponse({
+          success: false,
+          error: error.message
+        }));
+      return true; // Keep channel open for async response
+    }
+    
+    return false;
+  });
+
   // Start the extension
   init();
 

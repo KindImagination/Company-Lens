@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Company Lens - CV Comparison</title>
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+  <div class="sidepanel">
+    <!-- Header -->
+    <header class="sidepanel__header">
+      <div class="sidepanel__header-content">
+        <h1 class="sidepanel__title">
+          <span class="sidepanel__icon">🔍</span>
+          CV Comparison Results
+        </h1>
+        <button class="sidepanel__close" id="closeButton" aria-label="Close">×</button>
+      </div>
+    </header>
+
+    <!-- Loading State -->
+    <div class="loading" id="loadingState">
+      <div class="loading__spinner"></div>
+      <p class="loading__text">Analyzing your CV against the job description...</p>
+      <p class="loading__subtext">This may take 10-20 seconds</p>
+    </div>
+
+    <!-- Error State -->
+    <div class="error" id="errorState" style="display: none;">
+      <div class="error__icon">⚠️</div>
+      <h2 class="error__title">Comparison Failed</h2>
+      <p class="error__message" id="errorMessage"></p>
+      <button class="error__retry" id="retryButton">Try Again</button>
+    </div>
+
+    <!-- Results State -->
+    <div class="results" id="resultsState" style="display: none;">
+      <!-- Job Info -->
+      <div class="job-info" id="jobInfo">
+        <h2 class="job-info__title" id="jobTitle"></h2>
+        <p class="job-info__company" id="jobCompany"></p>
+      </div>
+
+      <!-- Match Score -->
+      <div class="match-score">
+        <div class="match-score__circle" id="scoreCircle">
+          <svg viewBox="0 0 100 100" class="match-score__svg">
+            <circle cx="50" cy="50" r="45" class="match-score__bg"></circle>
+            <circle cx="50" cy="50" r="45" class="match-score__progress" id="scoreProgress"></circle>
+          </svg>
+          <div class="match-score__value">
+            <span class="match-score__number" id="scoreNumber">0</span>
+            <span class="match-score__percent">%</span>
+          </div>
+        </div>
+        <p class="match-score__label">Match Score</p>
+      </div>
+
+      <!-- Summary -->
+      <div class="summary" id="summarySection">
+        <h3 class="section-title">Summary</h3>
+        <p class="summary__text" id="summaryText"></p>
+      </div>
+
+      <!-- View Tabs -->
+      <div class="tabs">
+        <button class="tabs__tab tabs__tab--active" id="tabSummary" data-tab="summary">
+          Summary View
+        </button>
+        <button class="tabs__tab" id="tabDetailed" data-tab="detailed">
+          Detailed Analysis
+        </button>
+      </div>
+
+      <!-- Summary View Content -->
+      <div class="tab-content tab-content--active" id="summaryView">
+        <!-- Matching Skills -->
+        <div class="skills-section">
+          <h3 class="section-title">✅ Matching Skills</h3>
+          <div class="skills-list" id="matchingSkills">
+            <!-- Skills will be inserted here -->
+          </div>
+        </div>
+
+        <!-- Missing Skills -->
+        <div class="skills-section">
+          <h3 class="section-title">⚠️ Skills to Develop</h3>
+          <div class="skills-list" id="missingSkills">
+            <!-- Skills will be inserted here -->
+          </div>
+        </div>
+
+        <!-- Quick Recommendations -->
+        <div class="recommendations">
+          <h3 class="section-title">💡 Quick Recommendations</h3>
+          <ul class="recommendations__list" id="quickRecommendations">
+            <!-- Recommendations will be inserted here -->
+          </ul>
+        </div>
+      </div>
+
+      <!-- Detailed View Content -->
+      <div class="tab-content" id="detailedView" style="display: none;">
+        <!-- Strengths -->
+        <div class="detail-section">
+          <h3 class="section-title">💪 Strengths</h3>
+          <p class="detail-section__text" id="strengthsText"></p>
+        </div>
+
+        <!-- Gaps -->
+        <div class="detail-section">
+          <h3 class="section-title">📊 Gaps & Areas for Improvement</h3>
+          <p class="detail-section__text" id="gapsText"></p>
+        </div>
+
+        <!-- Experience -->
+        <div class="detail-section">
+          <h3 class="section-title">🎯 Experience Assessment</h3>
+          <p class="detail-section__text" id="experienceText"></p>
+        </div>
+
+        <!-- Education -->
+        <div class="detail-section">
+          <h3 class="section-title">🎓 Education Assessment</h3>
+          <p class="detail-section__text" id="educationText"></p>
+        </div>
+
+        <!-- All Recommendations -->
+        <div class="recommendations">
+          <h3 class="section-title">💡 Detailed Recommendations</h3>
+          <ul class="recommendations__list" id="detailedRecommendations">
+            <!-- Recommendations will be inserted here -->
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="sidepanel.js"></script>
+</body>
+</html>
+

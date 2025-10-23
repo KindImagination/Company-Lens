@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kununu Badge Settings</title>
+  <title>Company Lens Settings</title>
   <style>
     * {
       margin: 0;
@@ -210,12 +210,200 @@
       color: #999;
       text-align: center;
     }
+
+    /* CV Comparison Section Styles */
+    .cv-section {
+      margin-bottom: 12px;
+      padding: 12px;
+      background: #f5f9fa;
+      border-radius: 8px;
+      border: 1px solid #e0e0e0;
+    }
+
+    .cv-section__title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 10px;
+    }
+
+    .cv-upload {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .cv-upload__input {
+      display: none;
+    }
+
+    .cv-upload__button {
+      padding: 8px 12px;
+      font-size: 13px;
+      font-weight: 500;
+      background: #00b8d4;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .cv-upload__button:hover {
+      background: #0097a7;
+    }
+
+    .cv-upload__button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    .cv-status {
+      padding: 8px;
+      background: #e8f5e9;
+      border-radius: 4px;
+      font-size: 12px;
+      color: #2e7d32;
+      display: none;
+    }
+
+    .cv-status.show {
+      display: block;
+    }
+
+    .cv-status__filename {
+      font-weight: 600;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .cv-status__meta {
+      font-size: 11px;
+      color: #555;
+    }
+
+    .cv-status__delete {
+      margin-top: 6px;
+      padding: 4px 8px;
+      font-size: 11px;
+      background: #f44336;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .cv-status__delete:hover {
+      background: #d32f2f;
+    }
+
+    .api-key-section {
+      margin-bottom: 12px;
+    }
+
+    .api-key-section__label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: #666;
+      margin-bottom: 6px;
+    }
+
+    .api-key-section__input-group {
+      display: flex;
+      gap: 6px;
+    }
+
+    .api-key-section__input {
+      flex: 1;
+      padding: 8px 10px;
+      font-size: 12px;
+      font-family: monospace;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      background: #fff;
+      transition: border-color 0.2s ease;
+    }
+
+    .api-key-section__input:focus {
+      outline: none;
+      border-color: #00b8d4;
+      box-shadow: 0 0 0 2px rgba(0, 184, 212, 0.1);
+    }
+
+    .api-key-section__save {
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: 500;
+      background: #00b8d4;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .api-key-section__save:hover {
+      background: #0097a7;
+    }
+
+    .api-key-status {
+      font-size: 11px;
+      color: #666;
+      margin-top: 4px;
+    }
+
+    .api-key-status--set {
+      color: #2e7d32;
+    }
+
+    .api-key-status--not-set {
+      color: #f57c00;
+    }
+
+    .compare-button {
+      width: 100%;
+      padding: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      background: linear-gradient(135deg, #00b8d4 0%, #0097a7 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      margin-bottom: 12px;
+    }
+
+    .compare-button:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .compare-button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .compare-button__icon {
+      margin-right: 6px;
+    }
+
+    .help-text {
+      font-size: 11px;
+      color: #999;
+      font-style: italic;
+      margin-top: 6px;
+    }
   </style>
 </head>
 <body>
   <div class="header">
-    <div class="header__icon">K</div>
-    <h1 class="header__title">Kununu Badge</h1>
+    <div class="header__icon">CL</div>
+    <h1 class="header__title">Company Lens</h1>
   </div>
 
   <div class="toggle-section">
@@ -229,7 +417,43 @@
   </div>
 
   <div class="info">
-    Toggle the badge on/off for the current StepStone tab. The setting is remembered per tab session.
+    Toggle the badge on/off for the current tab. The setting is remembered per tab session.
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- CV Comparison Section -->
+  <div class="cv-section">
+    <h3 class="cv-section__title">CV Comparison</h3>
+    
+    <div class="cv-upload">
+      <input type="file" id="cvFileInput" class="cv-upload__input" accept=".pdf,.docx">
+      <button id="cvUploadButton" class="cv-upload__button">📄 Upload CV (PDF/DOCX)</button>
+    </div>
+
+    <div id="cvStatus" class="cv-status">
+      <span class="cv-status__filename" id="cvFilename"></span>
+      <span class="cv-status__meta" id="cvMeta"></span>
+      <button id="cvDeleteButton" class="cv-status__delete">Delete CV</button>
+    </div>
+
+    <div class="api-key-section">
+      <label for="apiKeyInput" class="api-key-section__label">DeepSeek API Key</label>
+      <div class="api-key-section__input-group">
+        <input type="password" id="apiKeyInput" class="api-key-section__input" placeholder="sk-...">
+        <button id="apiKeySaveButton" class="api-key-section__save">Save</button>
+      </div>
+      <div id="apiKeyStatus" class="api-key-status"></div>
+    </div>
+
+    <button id="compareButton" class="compare-button" disabled>
+      <span class="compare-button__icon">🔍</span>
+      Compare with Job
+    </button>
+    
+    <div class="help-text" id="compareHelp">
+      Upload CV and set API key to compare
+    </div>
   </div>
 
   <div class="section-divider"></div>
@@ -265,9 +489,16 @@
   </div>
 
   <div class="footer">
-    Version 1.0.0 • StepStone only
+    Version 2.0.0 • StepStone & Indeed
   </div>
 
+  <!-- Load parsing libraries -->
+  <script src="../lib/pdf.min.js"></script>
+  <script src="../lib/mammoth.browser.min.js"></script>
+  <script src="../utils/cv-storage.js"></script>
+  <script src="../utils/file-parser.js"></script>
+  
+  <!-- Load popup script -->
   <script src="popup.js"></script>
 </body>
 </html>

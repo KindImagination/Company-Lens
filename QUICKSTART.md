@@ -1,210 +1,246 @@
-# Quick Start Guide - Kununu Badge Extension
+# Company Lens - Quick Start Guide
 
-## 🚀 Get Running in 2 Minutes
+Get up and running with Company Lens in 5 minutes!
 
-### Step 1: Load the Extension (30 seconds)
+## Step 1: Install Required Libraries (2 minutes)
 
-1. Open Chrome and go to: `chrome://extensions/`
-2. Toggle **"Developer mode"** ON (top-right corner)
-3. Click **"Load unpacked"**
-4. Navigate to and select this folder: `CompanyLens`
-5. ✅ Extension loaded!
+Download the parsing libraries needed for CV upload:
 
-### Step 2: Test on StepStone (1 minute)
+```bash
+# Navigate to the lib/ directory
+cd lib/
 
-1. Go to: https://www.stepstone.de
-2. Search for any job (e.g., "Software Developer")
-3. Click on a job listing
-4. 👀 **Look for the badge!**
+# Download PDF.js (for PDF parsing)
+curl -o pdf.min.js https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js
+curl -o pdf.worker.min.js https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js
 
-You should see a cyan badge with:
-- **Icon:** White "K" on colored circle
-- **Text:** "Kununu: —"
-- **Position:** Near company name OR bottom-right corner
-
-### Step 3: Try the Toggle (30 seconds)
-
-1. Click the extension icon in Chrome toolbar (top-right)
-2. Toggle **"Show badge on this tab"** OFF
-3. Badge disappears ✨
-4. Toggle it back ON
-5. Badge reappears ✨
-
----
-
-## ✅ What to Expect
-
-### Badge Positions
-
-**Mode 1: Inline (Preferred)**
-- Badge appears near the company name/header
-- Integrated into the page layout
-
-**Mode 2: Floating (Fallback)**
-- Badge appears in bottom-right corner
-- Fixed position, stays visible when scrolling
-
-### Visual Style
-
-```
-┌────────────────┐
-│ K Kununu: —   │  ← Gradient cyan-to-teal background
-└────────────────┘     White text, rounded corners
+# Download Mammoth.js (for DOCX parsing)
+curl -o mammoth.browser.min.js https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js
 ```
 
-### Behavior
+**Alternative (Manual Download):**
+1. Visit the URLs above in your browser
+2. Save the files to the `lib/` directory
+3. Make sure filenames match exactly
 
-- ✓ Appears automatically on StepStone pages
-- ✓ Updates when navigating between jobs (SPA support)
-- ✓ Never appears twice
-- ✓ No page slowdown
-- ✓ No network calls
+## Step 2: Load Extension in Chrome (1 minute)
+
+1. Open Chrome
+2. Navigate to `chrome://extensions/`
+3. Enable **"Developer mode"** (toggle in top-right corner)
+4. Click **"Load unpacked"**
+5. Select the `CompanyLens` directory
+6. Verify extension appears in your toolbar
+
+**Important**: After adding the libraries, reload the extension:
+- Click the **reload button** (🔄) next to the Company Lens extension
+- Or disable and re-enable the extension
+
+## Step 3: Get DeepSeek API Key (1 minute)
+
+1. Visit [https://platform.deepseek.com](https://platform.deepseek.com)
+2. Sign up or log in
+3. Navigate to API Keys section
+4. Create a new API key
+5. Copy the key (starts with `sk-`)
+
+💡 **Tip**: DeepSeek offers free credits for new users!
+
+## Step 4: Configure Extension (1 minute)
+
+1. Click the **Company Lens icon** in your Chrome toolbar
+2. Click **"📄 Upload CV (PDF/DOCX)"**
+3. Select your CV file (PDF or DOCX)
+4. Wait for "CV uploaded successfully!" message
+5. Paste your DeepSeek API key in the "DeepSeek API Key" field
+6. Click **"Save"**
+
+✅ You're all set!
+
+## Step 5: Try It Out! (30 seconds)
+
+### Compare Your CV with a Job
+
+1. Go to [StepStone](https://www.stepstone.de) or [Indeed](https://www.indeed.com)
+2. Open any job detail page
+3. Click the **Company Lens icon** in your toolbar
+4. Click **"Compare with Job"** button
+5. Wait 10-20 seconds for AI analysis
+6. View results in the side panel!
+
+### View Company Ratings
+
+1. On any job page, look for the **Kununu badge** (appears automatically)
+2. Click the badge to preview the company's Kununu profile
+3. Browse ratings and reviews
+
+## What's Next?
+
+### Understanding Your Results
+
+**Match Score**
+- 70-100%: Excellent match! 🎯
+- 50-69%: Good match with some gaps
+- Below 50%: Significant skill gaps
+
+**Summary View**
+- See top matching skills (green)
+- Identify missing skills (orange)
+- Get quick recommendations
+
+**Detailed View**
+- Deep analysis of strengths
+- Comprehensive gap assessment
+- Experience and education review
+- Actionable recommendations
+
+### Managing Your Data
+
+**Update Your CV**
+- Upload a new file to replace the current one
+- Extension keeps only the latest version
+
+**Change API Key**
+- Update anytime in the popup
+- Useful if you rotate keys or switch accounts
+
+**Delete Data**
+- Click "Delete CV" to remove your CV
+- Extension stores everything locally (no cloud)
+
+## Troubleshooting
+
+### "PDF.js library not loaded"
+
+**Solution**: Download the libraries (Step 1)
+```bash
+cd lib/
+curl -o pdf.min.js https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js
+curl -o pdf.worker.min.js https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js
+```
+
+### "Could not extract job description"
+
+**Solutions**:
+- Make sure you're on a **job detail page** (not search results)
+- Try refreshing the page
+- Check console for errors (F12 → Console)
+
+### "Invalid API key"
+
+**Solutions**:
+- Verify key starts with `sk-`
+- Check key is active on DeepSeek platform
+- Try generating a new key
+
+### "Compare with Job" button is disabled
+
+**Check these**:
+- ✅ CV uploaded?
+- ✅ API key saved?
+- ✅ On a job page (StepStone or Indeed)?
+
+All three must be true to enable comparison.
+
+## Tips for Best Results
+
+### CV Tips
+
+✅ **Do:**
+- Use a clear, text-based PDF or DOCX
+- Keep file under 10MB
+- Include all relevant skills
+- Format consistently
+
+❌ **Don't:**
+- Use scanned/image PDFs
+- Include large images
+- Use unusual formatting
+
+### API Usage
+
+- Each comparison uses ~2000-4000 tokens
+- DeepSeek charges per token (very affordable)
+- Free tier usually includes 5M tokens
+- Monitor your usage on DeepSeek dashboard
+
+### Privacy
+
+- All data stored locally in your browser
+- API calls go directly to DeepSeek (not through us)
+- No tracking or analytics
+- Open source - inspect the code!
+
+## Advanced Features
+
+### Diagnostics Mode
+
+For testing Kununu widget:
+1. Open extension popup
+2. Enable "Diagnostics: Kununu Widget Spike"
+3. Enter test slug (e.g., `de/sap`)
+4. View iframe embedding test
+
+### Company Slug Mapping
+
+The extension auto-detects companies and suggests Kununu URLs:
+1. Click Kununu badge
+2. In the preview overlay, click "✏ Edit"
+3. Adjust the company slug if needed
+4. Click "Save" to remember for next time
+
+## Getting Help
+
+### Common Issues
+
+1. **Extension not appearing**: Reload `chrome://extensions/`
+2. **Badge not showing**: Refresh the job page
+3. **Comparison takes too long**: Check internet connection
+4. **Side panel won't open**: Requires Chrome 114+
+
+### Check Logs
+
+Open DevTools Console (F12) and look for:
+- `[Company Lens]` messages
+- Any error messages in red
+
+### Report Issues
+
+Found a bug? Check:
+1. Console logs (F12 → Console)
+2. Extension version (`chrome://extensions/`)
+3. Chrome version (`chrome://version/`)
+
+## Resources
+
+- **Full Documentation**: See `README.md`
+- **Architecture**: See `ARCHITECTURE.md`
+- **Library Setup**: See `lib/README.md`
+- **Testing Guide**: See `TESTING.md`
 
 ---
 
-## 🔍 Quick Verification
+## Quick Reference Card
 
-Open DevTools (F12) and check:
-
-1. **Console tab**: Look for `[Kununu Badge]` messages
-   ```
-   [Kununu Badge] Initializing on https://www.stepstone.de/...
-   [Kununu Badge] Badge inserted in inline mode
-   ```
-
-2. **Elements tab**: Find `<div id="kununu-badge-host">`
-   - Should contain `#shadow-root (closed)`
-   - Badge HTML is inside shadow root
-
-3. **Network tab**: Filter for extension traffic
-   - Should show **ZERO requests**
-
----
-
-## 🐛 Something Wrong?
-
-### Badge Not Showing?
-
-**Check:**
-- [ ] Extension is enabled at `chrome://extensions/`
-- [ ] You're on `*.stepstone.de` domain
-- [ ] Page has fully loaded
-- [ ] Toggle is ON (click extension icon to check)
-
-**Fix:** Refresh page (Ctrl+R or F5)
-
-### Console Errors?
-
-- Open DevTools (F12) → Console tab
-- Look for red error messages
-- If you see errors, check:
-  - All files are present
-  - manifest.json is valid
-  - Icons exist in icons/ folder
-
-### Badge in Wrong Spot?
-
-- **This is normal!** The extension has two modes:
-  1. **Inline**: Near company (preferred)
-  2. **Floating**: Bottom-right (fallback)
-- If company element isn't detected, floating mode is used
-- This ensures badge always appears
+```
+┌─────────────────────────────────────────────┐
+│         COMPANY LENS QUICK COMMANDS         │
+├─────────────────────────────────────────────┤
+│ Upload CV:       Click extension → Upload   │
+│ Set API Key:     Click extension → Enter    │
+│ Compare:         On job page → Compare      │
+│ View Results:    Auto-opens in side panel   │
+│ Company Rating:  Click Kununu badge         │
+│ Delete CV:       Click extension → Delete   │
+├─────────────────────────────────────────────┤
+│ Supported Sites: StepStone, Indeed          │
+│ Supported Files: PDF, DOCX                  │
+│ Required:        Chrome 114+, DeepSeek API  │
+└─────────────────────────────────────────────┘
+```
 
 ---
 
-## 📚 Next Steps
+**🎉 Happy Job Hunting!**
 
-**For Detailed Information:**
-- **README.md** - Full documentation and architecture
-- **TESTING.md** - Comprehensive testing guide (12 test cases)
-- **FILES_CREATED.md** - Complete file manifest and code stats
-
-**For Customization:**
-- Edit `content/content.js` → `createBadgeContent()` for badge styling
-- Edit `popup/popup.html` for popup appearance
-- Edit `manifest.json` for extension metadata
-
-**For Real Data Integration:**
-- Current: Shows placeholder "—"
-- Future: Add Kununu API integration or web scraping
-- Badge structure ready for dynamic rating display
-
----
-
-## 📋 Features Overview
-
-| Feature | Status |
-|---------|--------|
-| Manifest V3 | ✅ |
-| Shadow DOM Isolation | ✅ |
-| Smart Badge Positioning | ✅ |
-| SPA Navigation Support | ✅ |
-| Per-Tab Toggle | ✅ |
-| Zero Network Calls | ✅ |
-| Performance Optimized | ✅ |
-| Fully Documented | ✅ |
-
----
-
-## 🎯 Testing Checklist
-
-Quick 5-minute test:
-
-- [ ] Extension loads without errors
-- [ ] Badge appears on StepStone job page
-- [ ] Badge text is "Kununu: —"
-- [ ] Badge has cyan gradient background
-- [ ] Clicking another job shows badge again (SPA test)
-- [ ] Toggle OFF hides badge
-- [ ] Toggle ON shows badge
-- [ ] No console errors
-- [ ] DevTools Network shows zero extension requests
-- [ ] Shadow DOM exists (check Elements tab)
-
-**All checked?** ✅ Extension is working perfectly!
-
----
-
-## 🚨 Important Notes
-
-1. **Placeholder Data**: Badge shows "—" (no real rating yet)
-2. **StepStone Only**: Won't work on other sites
-3. **No Data Collection**: Completely private, no tracking
-4. **Session Storage**: Toggle state resets after closing browser
-5. **Development Mode**: Chrome may show warnings (normal for unpacked extensions)
-
----
-
-## 💡 Pro Tips
-
-- **Keyboard Shortcut**: Set one at `chrome://extensions/shortcuts`
-- **Pin Extension**: Right-click extension icon → "Pin"
-- **Console Logging**: Useful for debugging, shows badge lifecycle
-- **Popup Stays Open**: Click outside to close or press Esc
-
----
-
-## 🔗 Quick Links
-
-- Chrome Extensions: `chrome://extensions/`
-- StepStone: https://www.stepstone.de
-- DevTools: Press F12 or right-click → Inspect
-
----
-
-## ✨ You're All Set!
-
-The extension is production-ready and follows all best practices:
-- Manifest V3 compliant
-- Shadow DOM isolation
-- Zero external dependencies
-- Comprehensive error handling
-- Performance optimized
-- Privacy-focused
-
-**Enjoy your new Kununu Badge extension!** 🎉
-
----
-
-*Need help? Check README.md for troubleshooting or TESTING.md for detailed test procedures.*
-
+Company Lens helps you apply smarter, not harder. Good luck with your applications!
