@@ -97,6 +97,40 @@
           font-size: 12px;
         }
         
+        .diag-header__actions {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        
+        .diag-action-btn {
+          background: rgba(255, 255, 255, 0.2);
+          border: none;
+          color: white;
+          font-size: 12px;
+          padding: 6px 10px;
+          border-radius: 4px;
+          cursor: pointer;
+          transition: background 0.2s ease;
+          white-space: nowrap;
+        }
+        
+        .diag-action-btn:hover {
+          background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .diag-action-btn:active {
+          background: rgba(255, 255, 255, 0.4);
+        }
+        
+        .diag-action-btn--active {
+          background: rgba(76, 175, 80, 0.8);
+        }
+        
+        .diag-action-btn--active:hover {
+          background: rgba(76, 175, 80, 0.9);
+        }
+        
         .diag-close {
           background: rgba(255, 255, 255, 0.2);
           border: none;
@@ -310,7 +344,15 @@
             <span class="diag-header__icon">🔬</span>
             Kununu Widget Spike
           </div>
-          <button class="diag-close" id="diagClose" aria-label="Close diagnostics" title="Close (Esc)">×</button>
+          <div class="diag-header__actions">
+            <button class="diag-action-btn" id="diagCopy" aria-label="Copy diagnostics" title="Copy diagnostics to clipboard">
+              📋 Copy
+            </button>
+            <button class="diag-action-btn" id="diagToggleHighlight" aria-label="Toggle extraction highlights" title="Show/hide extraction highlights">
+              👁️ Highlights
+            </button>
+            <button class="diag-close" id="diagClose" aria-label="Close diagnostics" title="Close (Esc)">×</button>
+          </div>
         </div>
         
         <div class="diag-body">
@@ -770,6 +812,18 @@
       closeButton.addEventListener('click', hideDiagnostics);
     }
     
+    // Setup copy button
+    const copyButton = diagShadowRoot.getElementById('diagCopy');
+    if (copyButton) {
+      copyButton.addEventListener('click', copyDiagnosticsToClipboard);
+    }
+    
+    // Setup highlight toggle button
+    const highlightButton = diagShadowRoot.getElementById('diagToggleHighlight');
+    if (highlightButton) {
+      highlightButton.addEventListener('click', toggleExtractionHighlights);
+    }
+    
     // Setup ESC key handler
     const handleEscape = (e) => {
       if (e.key === 'Escape') {
@@ -815,8 +869,287 @@
   /**
    * Hides and cleans up the diagnostics overlay
    */
+  /**
+   * Copies diagnostic results to clipboard
+   */
+  function copyDiagnosticsToClipboard() {
+    try {
+      // Gather diagnostics data
+      const diagnostics = window.gatherBadgeDiagnostics ? window.gatherBadgeDiagnostics() : null;
+      
+      if (!diagnostics) {
+        alert('No diagnostic data available');
+        return;
+      }
+
+      // Format diagnostics as text
+      let text = '=== Company Lens Diagnostics ===\n\n';
+      text += `Timestamp: ${diagnostics.timestamp}\n`;
+      text += `URL: ${diagnostics.url}\n`;
+      text += `Page Type: ${diagnostics.pageType}\n`;
+      text += `Job Detail Page: ${diagnostics.jobDetailPage ? 'Yes' : 'No'}\n`;
+      text += `Badge Enabled: ${diagnostics.badgeEnabled ? 'Yes' : 'No'}\n\n`;
+
+      // Elements
+      text += '--- Elements ---\n';
+      if (diagnostics.elements) {
+        text += `Indeed Company (.e1wnkr790): ${diagnostics.elements.indeedCompany?.exists ? 'Found' : 'Not found'}\n`;
+        if (diagnostics.elements.indeedCompany?.linkText) {
+          text += `  Company Name: ${diagnostics.elements.indeedCompany.linkText}\n`;
+        }
+        text += `StepStone Job Ad (.job-ad-display-du9bhi): ${diagnostics.elements.jobAdDisplay?.exists ? 'Found' : 'Not found'}\n`;
+        if (diagnostics.elements.jobAdDisplay?.spanText) {
+          text += `  Company Name: ${diagnostics.elements.jobAdDisplay.spanText}\n`;
+        }
+        text += `Existing Badge: ${diagnostics.elements.existingBadge?.exists ? 'Present' : 'Not present'}\n`;
+      }
+      text += '\n';
+
+      // Extraction
+      text += '--- Company Extraction ---\n';
+      if (diagnostics.extraction) {
+        text += `Success: ${diagnostics.extraction.success ? 'Yes' : 'No'}\n`;
+        text += `Extracted Name: ${diagnostics.extraction.raw || 'N/A'}\n`;
+        text += `Anchor: ${diagnostics.extraction.anchor || 'N/A'}\n`;
+        if (diagnostics.extraction.tokens) {
+          const tokens = Object.entries(diagnostics.extraction.tokens)
+            .filter(([, value]) => value)
+            .map(([key]) => key.toUpperCase())
+            .join(', ');
+          if (tokens) {
+            text += `Detected Suffixes: ${tokens}\n`;
+          }
+        }
+      }
+      text += '\n';
+
+      // Job Extraction
+      text += '--- Job Extraction ---\n';
+      if (diagnostics.jobExtraction) {
+        text += `Success: ${diagnostics.jobExtraction.success ? 'Yes' : 'No'}\n`;
+        if (diagnostics.jobExtraction.error) {
+          text += `Error: ${diagnostics.jobExtraction.error}\n`;
+        }
+        text += `Title: ${diagnostics.jobExtraction.title}\n`;
+        text += `Company: ${diagnostics.jobExtraction.company}\n`;
+        text += `Description Length: ${diagnostics.jobExtraction.descriptionLength} characters\n`;
+        text += `Requirements Length: ${diagnostics.jobExtraction.requirementsLength} characters\n`;
+        if (diagnostics.jobExtraction.fullDescription) {
+          text += `\nDescription Preview (first 500 chars):\n${diagnostics.jobExtraction.fullDescription.substring(0, 500)}${diagnostics.jobExtraction.fullDescription.length > 500 ? '...' : ''}\n`;
+        }
+      }
+      text += '\n';
+
+      // Anchor
+      text += '--- Anchor ---\n';
+      if (diagnostics.anchor) {
+        text += `Found: ${diagnostics.anchor.success ? 'Yes' : 'No'}\n`;
+        text += `Element: ${diagnostics.anchor.element || 'N/A'}\n`;
+        text += `Mode: ${diagnostics.anchor.mode || 'N/A'}\n`;
+      }
+      text += '\n';
+
+      // Errors
+      if (diagnostics.errors && diagnostics.errors.length > 0) {
+        text += '--- Errors ---\n';
+        diagnostics.errors.forEach((error, index) => {
+          text += `${index + 1}. ${error.type}: ${error.message}\n`;
+        });
+        text += '\n';
+      }
+
+      text += '=== End of Diagnostics ===';
+
+      // Copy to clipboard
+      navigator.clipboard.writeText(text).then(() => {
+        // Show feedback
+        const copyButton = diagShadowRoot.getElementById('diagCopy');
+        if (copyButton) {
+          const originalText = copyButton.textContent;
+          copyButton.textContent = '✓ Copied!';
+          setTimeout(() => {
+            copyButton.textContent = originalText;
+          }, 2000);
+        }
+        console.log('[Company Lens] Diagnostics copied to clipboard');
+      }).catch(err => {
+        console.error('[Company Lens] Failed to copy diagnostics:', err);
+        alert('Failed to copy to clipboard: ' + err.message);
+      });
+    } catch (error) {
+      console.error('[Company Lens] Error copying diagnostics:', error);
+      alert('Error copying diagnostics: ' + error.message);
+    }
+  }
+
+  // State for extraction highlights
+  let highlightsVisible = false;
+  let highlightOverlays = [];
+
+  /**
+   * Toggles visual highlights of extracted elements
+   */
+  function toggleExtractionHighlights() {
+    highlightsVisible = !highlightsVisible;
+    
+    const highlightButton = diagShadowRoot.getElementById('diagToggleHighlight');
+    
+    if (highlightsVisible) {
+      // Show highlights
+      showExtractionHighlights();
+      if (highlightButton) {
+        highlightButton.classList.add('diag-action-btn--active');
+        highlightButton.textContent = '👁️ Hide';
+      }
+    } else {
+      // Hide highlights
+      hideExtractionHighlights();
+      if (highlightButton) {
+        highlightButton.classList.remove('diag-action-btn--active');
+        highlightButton.textContent = '👁️ Highlights';
+      }
+    }
+  }
+
+  /**
+   * Shows visual highlights on extracted elements
+   */
+  function showExtractionHighlights() {
+    // Clear any existing highlights
+    hideExtractionHighlights();
+
+    const highlights = [];
+
+    // Highlight job description element
+    const jobDescSelectors = [
+      '.eu4oa1w0',
+      '#jobDescriptionText',
+      'div[id*="jobDescription"]',
+      'div[class*="jobDescription"]',
+      '.jobsearch-jobDescriptionText',
+      '.jobsearch-JobComponent',
+      '[data-at="jobad-description"]',
+      '.job-description'
+    ];
+
+    for (const selector of jobDescSelectors) {
+      const element = document.querySelector(selector);
+      if (element && element.textContent && element.textContent.length > 100) {
+        highlights.push({
+          element: element,
+          label: `Job Description (${selector})`,
+          color: 'rgba(76, 175, 80, 0.3)' // Green
+        });
+        break; // Only highlight the first match
+      }
+    }
+
+    // Highlight company name element
+    const companySelectors = [
+      '.e1wnkr790',
+      '.job-ad-display-du9bhi',
+      '[data-at="header-company-name"]',
+      '[data-at="jobad-header-company-name"]'
+    ];
+
+    for (const selector of companySelectors) {
+      const element = document.querySelector(selector);
+      if (element) {
+        highlights.push({
+          element: element,
+          label: `Company Name (${selector})`,
+          color: 'rgba(33, 150, 243, 0.3)' // Blue
+        });
+        break; // Only highlight the first match
+      }
+    }
+
+    // Highlight job title element
+    const titleSelectors = [
+      'h1[data-at="header-job-title"]',
+      'h1.jobsearch-JobInfoHeader-title',
+      'h1[class*="job-title"]',
+      'h1[class*="JobTitle"]'
+    ];
+
+    for (const selector of titleSelectors) {
+      const element = document.querySelector(selector);
+      if (element && element.textContent) {
+        highlights.push({
+          element: element,
+          label: `Job Title (${selector})`,
+          color: 'rgba(255, 193, 7, 0.3)' // Amber
+        });
+        break; // Only highlight the first match
+      }
+    }
+
+    // Create highlight overlays
+    highlights.forEach(highlight => {
+      const rect = highlight.element.getBoundingClientRect();
+      
+      // Create overlay div
+      const overlay = document.createElement('div');
+      overlay.style.cssText = `
+        position: fixed;
+        top: ${rect.top + window.scrollY}px;
+        left: ${rect.left + window.scrollX}px;
+        width: ${rect.width}px;
+        height: ${rect.height}px;
+        background: ${highlight.color};
+        border: 2px solid ${highlight.color.replace('0.3', '1')};
+        pointer-events: none;
+        z-index: 999998;
+        box-sizing: border-box;
+        transition: all 0.3s ease;
+      `;
+      
+      // Create label
+      const label = document.createElement('div');
+      label.style.cssText = `
+        position: absolute;
+        top: -24px;
+        left: 0;
+        background: ${highlight.color.replace('0.3', '0.9')};
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+        white-space: nowrap;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      `;
+      label.textContent = highlight.label;
+      
+      overlay.appendChild(label);
+      document.body.appendChild(overlay);
+      
+      highlightOverlays.push(overlay);
+    });
+
+    console.log('[Company Lens] Showing', highlightOverlays.length, 'extraction highlights');
+  }
+
+  /**
+   * Hides extraction highlights
+   */
+  function hideExtractionHighlights() {
+    highlightOverlays.forEach(overlay => {
+      if (overlay.parentNode) {
+        overlay.parentNode.removeChild(overlay);
+      }
+    });
+    highlightOverlays = [];
+    console.log('[Company Lens] Extraction highlights hidden');
+  }
+
   function hideDiagnostics() {
     if (diagOverlay) {
+      // Hide any visible highlights
+      hideExtractionHighlights();
+      highlightsVisible = false;
+      
       // Remove ESC key handler
       if (diagOverlay._escapeHandler) {
         document.removeEventListener('keydown', diagOverlay._escapeHandler);
